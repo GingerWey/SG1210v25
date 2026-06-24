@@ -197,6 +197,28 @@ void CSG_DrawPictureEx(const TGUIPicture* pPic,
 
     const uint8_t* csgData = static_cast<const uint8_t*>(pPic->pData);
 
+    // Simulator: use full decoder (handles all CAS modes)
+    // MCU: will use streaming decoder (CAS 0/1/3 only)
+#ifdef __vmSIMULATOR__
+    CSGDecoder decoder;
+    DecoderResult r = decoder.DecodePicture(csgData, pPic->Size);
+    if (r.error != CSG_ErrCode::kOk || r.pixels.empty()) return;
+
+    const uint8_t* px = r.pixels.data();
+    for (int y = 0; y < r.height; ++y) {
+        for (int x = 0; x < r.width; ++x) {
+            uint8_t red=*px++, green=*px++, blue=*px++, alpha=*px++;
+            if (alpha > 0) {
+                uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
+                GUI_SetColor(color);
+                GUI_DrawPixel(x0 + x, y0 + y);
+            }
+        }
+    }
+    return;
+#else
+    // -- MCU streaming path (below) ------------------------------------
+
     // -- Parse picture header --------------------------------------------
     CSGPicture    pic;
     const uint8_t* compData   = nullptr;
@@ -228,15 +250,15 @@ void CSG_DrawPictureEx(const TGUIPicture* pPic,
     CSGDecoderState state;
     ColorMode outMode = static_cast<ColorMode>(pic.colorMode);
 
-    state.stream  = compData + (pic.dpos - kCsgPictureHeaderSize);
-    state.lineBuf = lineBuf;
-
     CSG_ErrCode err = CsgDecodeInit(&state, &pic, lineBuf,
                                     activePalette, outMode);
     if (err != CSG_ErrCode::kOk) {
         GUI_ALLOC_Free(hLineBuf);
         return;
     }
+
+    // MUST set stream AFTER Init (clears it to nullptr)
+    state.stream = compData + (pic.dpos - kCsgPictureHeaderSize);
 
     // -- Decode and draw row by row -------------------------------------
     int width  = pic.width;
@@ -271,4 +293,5 @@ void CSG_DrawPictureEx(const TGUIPicture* pPic,
 
     // -- Free line buffer -----------------------------------------------
     GUI_ALLOC_Free(hLineBuf);
+#endif  // __vmSIMULATOR__
 }
