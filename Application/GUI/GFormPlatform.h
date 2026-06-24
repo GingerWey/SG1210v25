@@ -60,19 +60,14 @@
   }  // namespace gform
 
 #else
-  // ── Simulator: MSVC std::mutex ────────────────────────────────────────
-  #include <mutex>
-
+  // ── Simulator: no-op lock (single-threaded, avoids static init crash) ─
   namespace gform {
   namespace platform {
 
   class Lock {
   public:
-      void Acquire() { m_mutex.lock(); }
-      void Release() { m_mutex.unlock(); }
-
-  private:
-      std::mutex m_mutex;
+      void Acquire() { }
+      void Release() { }
   };
 
   }  // namespace platform

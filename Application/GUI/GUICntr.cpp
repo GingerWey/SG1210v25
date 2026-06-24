@@ -39,6 +39,10 @@
 #include "GUIMessage.h"
 
 //  Form headers (for GFormsList registration) 
+#include "GPSplashForm.h"
+#include "GPMenuForm.h"
+#include "GPMainForm.h"
+#include "GPEventBrowserForm.h"
 #include "GPFatalForm.h"  // used by GUIShowFatalMessage
 
 #include <string.h>
@@ -79,7 +83,10 @@ struct FormEntry {
 // s_formTable is kept as a fallback for forms that don't use FormRegistrar
 // (e.g., forms not yet migrated, or forms that need late registration).
 static constexpr FormEntry s_formTable[] = {
-    { 0, nullptr, nullptr }   // Sentinel  no forms currently need late registration
+    { WID_SplashForm,     &FSplashForm,       "Splash"        },
+    { WID_MenuForm,       &FMainMenuForm,     "Menu"          },
+    { WID_MainForm,       &FMainForm,         "Main"          },
+    { WID_EventListForm,  &FEventBrowserForm, "EventBrowser"  },
 };
 
 static constexpr size_t kNumForms = sizeof(s_formTable) / sizeof(s_formTable[0]);

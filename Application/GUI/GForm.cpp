@@ -53,8 +53,12 @@ PendingMsg s_msgQueue[kMsgQueueSize] = {};
 size_t     s_msgHead = 0;
 size_t     s_msgTail = 0;
 
-// ── Platform mutex ────────────────────────────────────────────────────────
-gform::platform::Lock s_lock;
+// ── Platform mutex (lazy init — avoids static init order crash) ──────
+static gform::platform::Lock* s_plock = nullptr;
+static gform::platform::Lock& GetLock() {
+    if (!s_plock) s_plock = new gform::platform::Lock();
+    return *s_plock;
+}
 
 // ── Init flag ─────────────────────────────────────────────────────────────
 bool s_initialized = false;
@@ -170,7 +174,7 @@ void ShowTop(const void* para)
 
 void gform::Init()
 {
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     // NOTE: Do NOT clear the registry here. Forms register themselves
     // via FormRegistrar during static initialization (before main()),
@@ -198,7 +202,7 @@ void gform::Tick()
     bool hasPending = false;
 
     {
-        gform::ScopedLock _(s_lock);
+        gform::ScopedLock _(GetLock());
         if (s_msgHead != s_msgTail) {
             pending    = s_msgQueue[s_msgHead];
             s_msgHead  = (s_msgHead + 1) % kMsgQueueSize;
@@ -214,7 +218,7 @@ void gform::Tick()
         }
 
         {
-            gform::ScopedLock _(s_lock);
+            gform::ScopedLock _(GetLock());
             if (s_msgHead != s_msgTail) {
                 pending    = s_msgQueue[s_msgHead];
                 s_msgHead  = (s_msgHead + 1) % kMsgQueueSize;
@@ -228,7 +232,7 @@ void gform::Tick()
     // ── Deliver GM_TIMER_TICK to current form ────────────────────────────
     const GWinForm* callbacks = nullptr;
     {
-        gform::ScopedLock _(s_lock);
+        gform::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr) {
             callbacks = s_pCurrent->callbacks;
         }
@@ -256,7 +260,7 @@ void gform::RegisterForm(FormId id, const GWinForm* form, const char* name)
 {
     if (form == nullptr) return;
 
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     // Check for overwrite (same GWinForm pointer)
     int existIdx = FindRegIdxByForm(form);
@@ -297,7 +301,7 @@ const gform::FormRecord* gform::FindForm(FormId id)
 
 void gform::UnregisterForm(FormId id)
 {
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     int idx = FindRegIdx(id);
     if (idx < 0) return;
@@ -316,7 +320,7 @@ void gform::UnregisterForm(FormId id)
 
 void gform::OpenForm(FormId id, const void* para, FormTransition transition)
 {
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     switch (transition) {
 
@@ -395,7 +399,7 @@ void gform::OpenForm(FormId id, const void* para, FormTransition transition)
 
 void gform::CloseCurrentForm()
 {
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     TGWVoidProc closeFn = nullptr;
     TGWVoidProc showFn  = nullptr;
@@ -471,7 +475,7 @@ void gform::SendMsg(uint16_t msgId, uint16_t param, int32_t value)
     GM_MESSAGE  msg   = {};
 
     {
-        gform::ScopedLock _(s_lock);
+        gform::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
@@ -491,7 +495,7 @@ void gform::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
     GM_MESSAGE  msg   = {};
 
     {
-        gform::ScopedLock _(s_lock);
+        gform::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
@@ -507,7 +511,7 @@ void gform::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
 
 void gform::PostMsg(uint16_t msgId, uint16_t param, int32_t value)
 {
-    gform::ScopedLock _(s_lock);
+    gform::ScopedLock _(GetLock());
 
     size_t next = (s_msgTail + 1) % kMsgQueueSize;
     if (next == s_msgHead) return;  // Queue full, drop
@@ -526,7 +530,7 @@ void gform::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
     size_t  stackLen = 0;
 
     {
-        gform::ScopedLock _(s_lock);
+        gform::ScopedLock _(GetLock());
         stackLen = s_stackTop;
         for (size_t i = 0; i < s_stackTop; ++i) {
             stackCopy[i] = s_stack[i];
