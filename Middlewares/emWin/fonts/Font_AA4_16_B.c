@@ -19,17 +19,14 @@ File        : Font_AA4_16_B.c
 Purpose     : Font file.
 ----------------------------------------------------------------------
 */
+#include "FontSGRes.h"
 
 #include "GUI.h"
 
 #ifndef GUI_CONST_STORAGE
   #define GUI_CONST_STORAGE const
 #endif
-
-/* The following line needs to be included in any file selecting the
-   font.
-*/
-extern GUI_CONST_STORAGE GUI_FONT GUI_Font_AA4_16_B;
+#include <GUI_Type.h>
 
 /* Start of unicode area <Basic Latin> */
 GUI_CONST_STORAGE unsigned char acGUI_Font_AA4_16_B_0020[  1] = { /* code 0020, SPACE */

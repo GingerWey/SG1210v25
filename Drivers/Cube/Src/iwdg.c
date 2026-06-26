@@ -1,4 +1,4 @@
-/**
+ï»¿/**
   ******************************************************************************
   * File Name          : IWDG.c
   * Description        : This file provides code for the configuration
@@ -34,7 +34,7 @@ void MX_IWDG_Init(void)
                           = 4 * LsiFreq / 32
                           = LsiFreq / 8 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_32; // LSI=32K£¬ IWDGÖÜÆÚ1ms 32·ÖÆµ=1ms
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_32; // LSI=32Kï¼Œ IWDGå‘¨æœŸ1ms 32åˆ†é¢‘=1ms
   hiwdg.Init.Reload    = 3000;              // 2000ms // 0~0xFFF
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
     {

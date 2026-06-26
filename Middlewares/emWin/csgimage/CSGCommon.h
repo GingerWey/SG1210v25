@@ -348,12 +348,13 @@ struct CSGPicture {
 // Streaming decoder window size.  Covers images up to CSG_MAX_WIDTH × N,
 // where N = kDecWindowBytes / CSG_MAX_WIDTH rows.  Adjust for your MCU.
 #ifndef CSG_DEC_WINDOW_BYTES
-#define CSG_DEC_WINDOW_BYTES  4096   // Default 4 KB (covers 64×64 CRN=16)
+#define CSG_DEC_WINDOW_BYTES  8192   // 8 KB (covers 78×78 CRN=16 images; max lookback=128px)
 #endif
 
 struct CSGDecoderState {
     // ---- Set by caller before csgDecodePixels ----
     const uint8_t* stream;         // Compressed data pointer (in Flash)
+    size_t         streamSize;     // Compressed data byte count (prevents over-read)
     uint8_t*       lineBuf;        // Output line buffer (caller-provided, ≥ width × bpc)
 
     // ---- Fixed image context (set by csgDecodeInit) ----
@@ -365,11 +366,14 @@ struct CSGDecoderState {
     int            crn;            // Color number (0 = true color, no palette lookup)
     int            bpi;            // Bits per index (0 if crn==0)
 
+    // ---- Compression mode (set by csgDecodeInit) ----
+    int            cas;            // CompressAlgorithm value (0=None,1=RLE,2=DEFLATE,3=MiniLZ77,4=Huffman)
+
     // ---- Internal state (do not modify) ----
-    uint32_t       bitBuf;         // LZ77: current ctrl byte
+    uint32_t       bitBuf;         // LZ77: current ctrl byte / bit accumulator
     int            bitCount;       // LZ77: token index (0..7) or 8=need new ctrl
     int            windowPos;      // LZ77: byte offset in compressed stream
-    uint8_t        cal;            // Reserved
+    uint8_t        cal;            // Compression level
 
     // ---- Embedded sliding window (no caller allocation needed) ----
     uint8_t        window[CSG_DEC_WINDOW_BYTES];
@@ -384,7 +388,19 @@ struct CSGDecoderState {
     // or palette[0] when crn==0.
     uint8_t        transparent[4]; // CRM bytes of transparent color
 
-    // ---- Huffman state (reserved) ----
+    // ---- Pending MiniLZ77 match (carried across batch boundaries) ----
+    int            pendMatchLen;  // remaining match pixels (>0 = pending)
+    int            pendRef;       // source ref offset in window[]
+
+    // ---- Pending RLE frame (carried across batch boundaries) ----
+    int            pendRleCount;  // remaining pixels in current RLE frame
+    int            pendRleType;   // frame type (0=ZRC, 2=CPS, 3=CPL) or -1=none
+    uint8_t        pendRleCri;    // CRI value for CPS/CPL (only if pendRleType>=2)
+
+    // ---- DEFLATE intermediate buffer handle (GUI_ALLOC, 0=none) ----
+    size_t         deflateBufHandle;  // GUI_ALLOC handle for Huffman-decoded raw bytes
+
+    // ---- Huffman state (CAS=2 DEFLATE / CAS=4 Huffman) ----
     struct { const void* table; int maxBits; } huffLit;
     struct { const void* table; int maxBits; } huffDist;
 
@@ -392,10 +408,14 @@ struct CSGDecoderState {
         : stream(nullptr), lineBuf(nullptr),
           width(0), height(0), pixelsDecoded(0),
           bpc(0), palette(nullptr), crn(0), bpi(0),
+          cas(3),  // default to MiniLZ77
           bitBuf(0), bitCount(8),
           windowPos(0), cal(0), windowSize(CSG_DEC_WINDOW_BYTES),
           linePos(0), rowCount(0) {
         transparent[0]=transparent[1]=transparent[2]=transparent[3]=0;
+        pendMatchLen = 0; pendRef = 0;
+        pendRleCount = 0; pendRleType = -1; pendRleCri = 0;
+        deflateBufHandle = 0;
         huffLit.table = nullptr; huffLit.maxBits = 0;
         huffDist.table = nullptr; huffDist.maxBits = 0;
     }

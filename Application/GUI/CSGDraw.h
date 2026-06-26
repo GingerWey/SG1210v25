@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.h
- Version     : V1.00
+ Version     : V1.01
  By          : Wey. Silver Grid
 
  Description : CSG image drawing -- MCU-safe streaming decoder integration.
@@ -9,7 +9,8 @@
                Memory allocated from emWin GUIHEAP, freed after drawing.
                Supports atlas sub-pictures and palette replacement.
 
- Date        : 2026.06.24
+ Date        : 2026.06.24 (V1.00 — initial CSG drawing API)
+              2026.06.25 (V1.01 — added picIndex & saturation params)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_CSGDRAW_H
@@ -35,24 +36,17 @@ extern "C" {
 // Public API
 //=============================================================================
 
-/// Draw a CSG image (single picture or sub-picture #0 of an atlas).
-/// Memory: allocates line buffer from GUIHEAP, frees before return.
+/// Draw a CSG image (unified Sim+MCU path via streaming decoder).
+/// Output buffer allocated from GUI_ALLOC in CRM format.
+/// Sim: CRM→RGBA→GUI_DrawPixel.  MCU: CRM→LCD direct write.
 ///
-/// @param pPic   TGUIPicture with Type=ID_CSG, pData=CSG bytes, Size=byte count
-/// @param x0     Left coordinate on LCD
-/// @param y0     Top coordinate on LCD
-void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0);
-
-/// Draw a specific sub-picture from a CSG atlas, with optional palette override.
-///
-/// @param pPic      TGUIPicture with Type=ID_CSG
-/// @param picIndex  0-based picture index within the atlas
-/// @param palette   New palette in CRM format, or nullptr to use embedded palette
-/// @param x0, y0    Position on LCD
-void CSG_DrawPictureEx(const TGUIPicture* pPic,
-                       int picIndex,
-                       const uint8_t* palette,
-                       int x0, int y0);
+/// @param pPic       TGUIPicture with Type=ID_CSG, pData=CSG bytes, Size=byte count
+/// @param x0         Left coordinate on LCD
+/// @param y0         Top coordinate on LCD
+/// @param picIndex   0-based sub-picture index within an atlas (default 0)
+/// @param saturation Saturation percentage 10–100 (default 100 = no change)
+void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
+                     int picIndex = 0, int saturation = 100);
 
 //-----------------------------------------------------------------------------
 #ifdef __cplusplus

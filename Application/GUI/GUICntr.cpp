@@ -1,8 +1,8 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 /*
  File        : GUICntr.cpp
- Version     : V2.00
+ Version     : V2.01
  By          : Wey. Silver Grid
 
  Description : GUI controller - adapter layer delegating to the new GForm system.
@@ -12,8 +12,9 @@
                DEPRECATED: New code should use GForm.h directly.
                This file will be removed in a future cleanup phase.
 
- Date       : 2026.06.24 (v2.0 - adapter for gform)
-              2023.12.05 (v1.10 - original implementation)
+ Date       : 2026.06.25 (v2.01 — added touch polling support)
+              2026.06.24 (v2.0  — adapter for gform)
+              2023.12.05 (v1.10 — original implementation)
 */
 //-----------------------------------------------------------------------------//-----------------------------------------------------------------------------
 #include "GUICntr.h"
@@ -38,12 +39,27 @@
 #include "GWinTypes.h"
 #include "GUIMessage.h"
 
-//  Form headers (for GFormsList registration) 
+//  Form headers (for GFormsList registration)
 #include "GPSplashForm.h"
 #include "GPMenuForm.h"
 #include "GPMainForm.h"
 #include "GPEventBrowserForm.h"
 #include "GPFatalForm.h"  // used by GUIShowFatalMessage
+
+// MCU-only forms (require FreeRTOS / STM32 HAL / rtc.h)
+#ifndef __vmSIMULATOR__
+#include "GPDevInfoForm.h"
+#include "GPMessageForm.h"
+#include "GUICtrlConfigDialog.h"
+#include "GUIUARTConfigDialog.h"
+//#include "GPConfigForm.h"
+#include "GPGuageForm.h"
+#include "GPLoginDialog.h"
+#include "GPTimeDialog.h"
+//#include "GPWLGListForm.h"
+//#include "GPWLGViewForm.h"
+#include "GUIMisc.h"
+#endif
 
 #include <string.h>
 
@@ -82,29 +98,61 @@ struct FormEntry {
 // Forms now self-register via FormRegistrar in their own .cpp files.
 // s_formTable is kept as a fallback for forms that don't use FormRegistrar
 // (e.g., forms not yet migrated, or forms that need late registration).
-static constexpr FormEntry s_formTable[] = {
-    { WID_SplashForm,     &FSplashForm,       "Splash"        },
-    { WID_MenuForm,       &FMainMenuForm,     "Menu"          },
-    { WID_MainForm,       &FMainForm,         "Main"          },
-    { WID_EventListForm,  &FEventBrowserForm, "EventBrowser"  },
+static constexpr FormEntry s_formTableSim[] = {
+    { WID_SplashForm,       &FSplashForm,         "Splash"         },
+    { WID_MenuForm,         &FMainMenuForm,       "Menu"           },
+    { WID_MainForm,         &FMainForm,           "Main"           },
+    { WID_EventListForm,    &FEventBrowserForm,   "EventBrowser"   },
 };
 
-static constexpr size_t kNumForms = sizeof(s_formTable) / sizeof(s_formTable[0]);
+#ifndef __vmSIMULATOR__
+static constexpr FormEntry s_formTableMcu[] = {
+    { WID_CTRLConfigForm,   &FCTRLConfigForm,     "CTRLConfig"     },
+    { WID_UARTConfigForm,   &FUARTConfigForm,     "UARTConfig"     },
+    { WID_DevInfoForm,      &FDevInfoForm,        "DevInfo"        },
+    { WID_MessageForm,      &FMessageForm,        "Message"        },
+//    { WID_ConfigForm,       &FConfigForm,         "Config"         },
+    { WID_GuageForm,        &FGuageForm,          "Guage"          },
+    { WID_FatalForm,        &FFatalForm,          "Fatal"          },
+    { WID_LoginDialog,      &FLoginDialog,        "Login"          },
+    { WID_TimeDialog,       &FTimeDialog,         "Time"           },
+//    { WID_WLGListForm,      &FWavelogListForm,    "WLGList"        },
+//    { WID_WLGViewForm,      &FWavelogViewForm,    "WLGView"        },
+};
+#endif
+
+static constexpr size_t kNumSimForms = sizeof(s_formTableSim) / sizeof(s_formTableSim[0]);
+#ifndef __vmSIMULATOR__
+static constexpr size_t kNumMcuForms = sizeof(s_formTableMcu) / sizeof(s_formTableMcu[0]);
+#endif
 
 //=============================================================================
 // Adapter: register all known forms into GForm system
 //=============================================================================
 static void RegisterAllForms()
 {
-    for (size_t i = 0; i < kNumForms; ++i) {
-        if (s_formTable[i].form != nullptr) {
+    // Sim-compatible forms (always available)
+    for (size_t i = 0; i < kNumSimForms; ++i) {
+        if (s_formTableSim[i].form != nullptr) {
             gform::RegisterForm(
-                static_cast<gform::FormId>(s_formTable[i].id),
-                s_formTable[i].form,
-                s_formTable[i].name
+                static_cast<gform::FormId>(s_formTableSim[i].id),
+                s_formTableSim[i].form,
+                s_formTableSim[i].name
             );
         }
     }
+#ifndef __vmSIMULATOR__
+    // MCU-only forms (require FreeRTOS / STM32 HAL)
+    for (size_t i = 0; i < kNumMcuForms; ++i) {
+        if (s_formTableMcu[i].form != nullptr) {
+            gform::RegisterForm(
+                static_cast<gform::FormId>(s_formTableMcu[i].id),
+                s_formTableMcu[i].form,
+                s_formTableMcu[i].name
+            );
+        }
+    }
+#endif
 }
 
 //=============================================================================
@@ -124,7 +172,50 @@ void GUITick(void)
     }
 #endif
 
-    //  Idle timeout check 
+#if GUI_SUPPORT_TOUCH
+    // ── Touch polling ───────────────────────────────────────────────────
+    {
+        static GUI_PID_STATE s_lastState = {};
+        static bool          s_hadTouch  = false;
+
+        GUI_TOUCH_Exec();
+        GUI_PID_STATE state;
+        if (GUI_TOUCH_GetState(&state)) {
+            if (!s_hadTouch) {
+                // First reading: treat as touch down
+                gform::TouchEvent(TOUCH_DOWN,
+                                  static_cast<uint16_t>(state.x),
+                                  static_cast<uint16_t>(state.y));
+                FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
+            } else if (state.Pressed != s_lastState.Pressed) {
+                // Pressed state changed
+                gform::TouchEvent(state.Pressed ? TOUCH_DOWN : TOUCH_UP,
+                                  static_cast<uint16_t>(state.x),
+                                  static_cast<uint16_t>(state.y));
+                FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
+            } else if (state.Pressed &&
+                       (state.x != s_lastState.x || state.y != s_lastState.y)) {
+                // Position changed while pressed
+                gform::TouchEvent(TOUCH_MOVE,
+                                  static_cast<uint16_t>(state.x),
+                                  static_cast<uint16_t>(state.y));
+                FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
+            }
+            s_lastState = state;
+            s_hadTouch  = true;
+        } else {
+            // Touch lost (finger lifted completely)
+            if (s_hadTouch && s_lastState.Pressed) {
+                gform::TouchEvent(TOUCH_UP,
+                                  static_cast<uint16_t>(s_lastState.x),
+                                  static_cast<uint16_t>(s_lastState.y));
+            }
+            s_hadTouch = false;
+        }
+    }
+#endif
+
+    //  Idle timeout check
     bool needSwitchToMain = false;
 
 #ifndef __vmSIMULATOR__
@@ -254,11 +345,11 @@ void GUICenter()
 //=============================================================================
 bool GUIFormOpen(uint32_t uFormId, const void* para)
 {
-    // Validate form id range
+    // Validate form id range (WID_FORMBEGIN=100 .. WID_WLGViewForm=114)
     if (WID_FORMBEGIN > uFormId) return false;
 
     size_t idx = uFormId - WID_FORMBEGIN;
-    if (idx >= kNumForms) return false;
+    if (idx >= 15) return false;  // 15 total registered forms (4 Sim + 11 MCU)
 
     gform::PushForm(static_cast<gform::FormId>(uFormId), para);
     return true;

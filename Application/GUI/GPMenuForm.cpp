@@ -2,13 +2,14 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPMenuForm.c
- Version     : V1.10
+ Version     : V1.11
  By          : Silver Grid Technology
 
  Description : Main menu form implementation.
                Lists menu items, navigates to sub-forms on selection.
 
- Date        : 2023.12.05
+ Date        : 2023.12.05 (V1.10 — original implementation)
+              2026.06.25 (V1.11 — added GM_TOUCH touch screen handler)
 */
 //-----------------------------------------------------------------------------//-----------------------------------------------------------------------------
 #include "GPMenuForm.h"
@@ -449,6 +450,39 @@ static void _OnMessage(GM_MESSAGE * pMsg)
 
         break;
     }
+
+#if GUI_SUPPORT_TOUCH
+    case GM_TOUCH: {
+        uint16_t x = static_cast<uint16_t>((pMsg->Data.v >> 16) & 0xFFFF);
+        uint16_t y = static_cast<uint16_t>(pMsg->Data.v & 0xFFFF);
+        (void)x;  // Menu list uses full width
+
+        // Map y coordinate to visible item index
+        int visIdx = (static_cast<int>(y) - MenuList_y1) / HEIGHT_MENUITEM;
+        if (visIdx < 0) visIdx = 0;
+
+        int itemIdx = static_cast<int>(m_FormState.uTopItem) + visIdx;
+        if (itemIdx >= static_cast<int>(m_FormState.uCount))
+            itemIdx = static_cast<int>(m_FormState.uCount) - 1;
+        if (itemIdx < 0) break;
+
+        if (pMsg->Param == TOUCH_DOWN || pMsg->Param == TOUCH_MOVE) {
+            // Move cursor to touched item
+            if (static_cast<uint32_t>(itemIdx) != m_FormState.uCurItem) {
+                uint32_t oldCur = m_FormState.uCurItem;
+                m_FormState.uCurItem = static_cast<uint32_t>(itemIdx);
+                _DrawItem(oldCur);
+                _DrawItem(m_FormState.uCurItem);
+            }
+        } else if (pMsg->Param == TOUCH_UP) {
+            // Select and execute
+            m_FormState.uCurItem = static_cast<uint32_t>(itemIdx);
+            _ExecuteMenuCommand();
+        }
+        pMsg->MsgId = 0;
+        break;
+    }
+#endif
     }
 }
 //=============================================================================

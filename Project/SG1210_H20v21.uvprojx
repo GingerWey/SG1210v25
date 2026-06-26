@@ -1532,9 +1532,14 @@
               <FilePath>..\Middlewares\emWin\fonts\Font_AA4_16_B.c</FilePath>
             </File>
             <File>
-              <FileName>x128.cpp</FileName>
+              <FileName>ImageRes.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\Graphics\x128.cpp</FilePath>
+              <FilePath>..\Application\GUI\Graphics\ImageRes.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>ImageRes.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Application\GUI\Graphics\ImageRes.h</FilePath>
             </File>
           </Files>
         </Group>

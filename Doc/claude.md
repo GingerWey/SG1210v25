@@ -71,11 +71,45 @@ SG1210v21/
 - 输出：`Project/Objects/SG1210_H21v{version}.axf`
 
 ### 模拟器编译
-- Visual Studio 2026安装在 `d:/apps/vs2026`
-- 在 Visual Studio 中打开 `Sim/SG1210Sim.sln`
-- 配置选择 Debug | Win32，点击生成
-- 输出：`Sim/Build/SG1210D.exe`
-- 运行 `Sim/CleanUp.bat` 清理编译产物
+
+- Visual Studio 2026 安装在 `d:/apps/vs2026`
+- MSBuild 路径：`d:/apps/vs2026/MSBuild/Current/Bin/MSBuild.exe`
+
+**命令行编译 (Git Bash)**
+
+```bash
+# 完整流程：杀旧进程 → 编译 → 启动
+taskkill //F //IM SG1210Sim.exe 2>/dev/null; sleep 1
+cd Sim
+"d:/apps/vs2026/MSBuild/Current/Bin/MSBuild.exe" SG1210Sim.sln \
+  -p:Configuration=Debug -p:Platform=Win32 -m:1 -v:minimal
+start "" "D:/Works/SilverGrid/SG1210/Firmware/SG1210v21/Sim/Build/SG1210Sim.exe"
+```
+
+> **Git Bash 注意**：必须使用 `-p:` (短横线) 而非 `/p:` (斜杠)，否则 bash 会错误解析为 Unix 路径导致 MSB1008 错误。
+
+> **编译前必须杀进程**：SG1210Sim.exe 运行时会锁定 .exe 文件，LNK1168 错误。用 `taskkill //F //IM SG1210Sim.exe` 强制结束。
+
+> **`/m:1` 单线程编译**：多核并行编译 (`/m`) 时多个 `cl.exe` 进程争用同一个 `.pdb` 文件，报 `C1041`。长期方案是添加 `/FS` 编译选项。
+
+- 配置选择 Debug | Win32 或 Release | Win32
+- 输出：`Sim/Build/SG1210Sim.exe`
+
+**预期警告（非本次改动引入，可忽略）**
+
+| 警告 | 来源文件 | 原因 |
+|------|----------|------|
+| C4244 | NumProc.cpp | double → float 截断（MCU 数学运算） |
+| C4996 | DevRegInfo.cpp, GPMainForm.cpp 等 | sprintf/strncpy MSVC 安全警告，Sim 环境无害 |
+| C4018 | GPEventBrowserForm.cpp | signed/unsigned 比较（MCU 数据类型） |
+| C4305 | NumProc.cpp | double → const float 初始化截断 |
+| C4003 | GPMainForm.cpp | GetCoilState 宏参数不足（MCU 宏在 Sim 下展开） |
+
+**常见问题**
+
+1. **新增 .cpp 在 Sim 下编译失败** → 检查是否依赖 FreeRTOS / STM32 HAL / rtc.h 等 MCU 专有头文件。如果是，应通过 `#ifndef __vmSIMULATOR__` 条件编译排除，不要加入 vcxproj。
+2. **链接时缺少外部符号** → 确认对应的 .cpp 已加入 vcxproj 的 `<ClCompile>` 列表，且头文件 include 路径正确。
+3. **PDB 锁定 (C1041)** → 使用 `-m:1` 单线程编译，或考虑添加 `/FS` 编译选项到 vcxproj。
 
 ## 编码规范
 
@@ -95,24 +129,57 @@ SG1210v21/
 ```
 
 ### 文件头注释
+
+**新建文件模板**:
 ```cpp
 //-----------------------------------------------------------------------------
 /*
- File        : DevTypes.h
- Version     : V1.10
- By          : 银网科技
+ File        : NewFile.h
+ Version     : V1.00
+ By          : Wey. Silver Grid
 
- Description : 描述
+ Description : 功能描述
 
- Date       : 2023.12.05
+ Date       : 2026.06.25
 */
 //-----------------------------------------------------------------------------
 ```
 
+**修订规则** — 每次修改源文件必须同步更新头部:
+1. **Version** — 递增次版本号 (V1.00→V1.01→V1.02 ...)
+2. **Date** — 追加新行 `Date: YYYY.MM.DD (版本 — 变更说明)`，旧行保留不删
+3. **By** — 修订者在 Date 行注明即可，By 行保持不变（原始作者）
+
+**修订示例** (GUICntr.cpp):
+```cpp
+/*
+ File        : GUICntr.cpp
+ Version     : V2.01
+ By          : Wey. Silver Grid
+
+ Description : GUI controller — adapter layer.
+
+ Date       : 2026.06.25 (V2.01 — added touch polling support)
+              2026.06.24 (V2.0  — adapter for gform)
+              2023.12.05 (V1.10 — original implementation)
+*/
+```
+
+**修订原因用简洁的英文短句**，描述"做了什么"而非"为什么"（为什么在 git log 中）:
+- `added TouchEvent API for touch screen`
+- `added GM_TOUCH touch screen handler`
+- `added picIndex & saturation params`
+- `saturation helpers, atlas sub-picture, picIndex param`
+
 ### 注释语言
 - **Application/ 和 Drivers/Peripherals/**: 中文注释（简体中文）
 - **Middlewares/ (FreeRTOS/emWin/CSG)**: 英文注释
-- **统一使用 UTF-8 编码**
+- **新建文件**: 统一使用 UTF-8 with BOM
+- **旧有文件**: 大部分可转 UTF-8，以下三类**必须保持 GB2312**（详见下方中文显示原理）：
+  - 所有 Form 文件 (`Application/GUI/GP*.cpp/h`、`GUICntr.*`、`GUI*Dialog.*` 等)
+  - 中文字符串 (`Application/System/Strings/StrsCHS.h`、`TextStrs.cpp`)
+  - 中文字库文件（文件名含 `FontCHS` 标识，如 `FontCHS24LTH.cpp`、`FontCHS16LTH.cpp`）
+  - 注：`PictureRes.*`、`CSGDraw.*`、`x128.*` 等图像处理文件不涉及中文显示，可转 UTF-8
 
 ### 缩进与格式
 - 使用空格缩进（不用 Tab），2空格缩进
@@ -151,12 +218,91 @@ extern "C" {
 ### 看门狗
 协作式窗口看门狗：各任务在每个循环置位 `RSTSrc` 对应位，TIM9 1ms 中断检查所有任务位在时间窗口内是否被置位后才喂狗。
 
-### GUI 架构 (emWin)
+### GUI 架构 (emWin + GForm)
 - 自研表单系统 `GWinForm`：每个界面=4个函数指针(Init/Show/Close/MsgProc)
-- `FormManager` 单例管理表单注册、切换、消息分发
-- 窗口ID体系：`WID_SplashForm(100)`、`WID_MenuForm(101)`、`WID_MainForm(102)` 等
+- `gform::` namespace API 统一管理：Init/Tick/PushForm/ReplaceForm/PopForm/SendMsg/PostMsg
+- `GUICntr.cpp/h` 适配层：GUIStart/GUICenter/GUIFormOpen/GUIFormClose → gform 转发
+  - Sim 编译：4 个表单通过 `s_formTableSim[]` 注册
+  - MCU 编译：4+11=15 个表单通过 `s_formTableSim[]` + `s_formTableMcu[]` 注册
+  - `TGUIState/FGUIState` 全局状态供 MCU 背光超时/键盘轮询
+  - **不可删除** — 18+ 文件依赖，含 MCU 专有 `KEYDB_OnChanged`/`IRKBD_Received`/`GUIShowFatalMessage`
+- `FormManager.cpp/h` — 已删除 (Phase 5)，原为半成品单例，已被 GForm 完全替代
+- WID_ 常量双重定义：
+  - `GUICntr.h`: `#define` 宏（兼容旧代码，`#include` 顺序先于 GForm.h）
+  - `GForm.h`: `constexpr uint16_t`（新代码推荐，`#ifndef WID_FORMBEGIN` 防护）
+  - **修改 WID_ 时必须两处同步更新**
+
+#### 表单注册清单
+
+| WID | 常量 | 符号 | 文件 | Sim | MCU |
+|-----|------|------|------|:---:|:---:|
+| 100 | WID_SplashForm | FSplashForm | GPSplashForm.cpp | ✅ | ✅ |
+| 101 | WID_MenuForm | FMainMenuForm | GPMenuForm.cpp | ✅ | ✅ |
+| 102 | WID_MainForm | FMainForm | GPMainForm.cpp | ✅ | ✅ |
+| 103 | WID_EventListForm | FEventBrowserForm | GPEventBrowserForm.cpp | ✅ | ✅ |
+| 104 | WID_CTRLConfigForm | FCTRLConfigForm | GUICtrlConfigDialog.cpp | — | ✅ |
+| 105 | WID_UARTConfigForm | FUARTConfigForm | GUIUARTConfigDialog.cpp | — | ✅ |
+| 106 | WID_DevInfoForm | FDevInfoForm | GPDevInfoForm.cpp | — | ✅ |
+| 107 | WID_MessageForm | FMessageForm | GPMessageForm.cpp | — | ✅ |
+| 108 | WID_ConfigForm | FConfigForm | GPConfigForm.cpp | — | ✅ |
+| 109 | WID_GuageForm | FGuageForm | GPGuageForm.cpp | — | ✅ |
+| 110 | WID_FatalForm | FFatalForm | GPFatalForm.cpp | — | ✅ |
+| 111 | WID_LoginDialog | FLoginDialog | GPLoginDialog.cpp | — | ✅ |
+| 112 | WID_TimeDialog | FTimeDialog | GPTimeDialog.cpp | — | ✅ |
+| 113 | WID_WLGListForm | FWavelogListForm | GPWLGListForm.cpp | — | ✅ |
+| 114 | WID_WLGViewForm | FWavelogViewForm | GPWLGViewForm.cpp | — | ✅ |
+
+> MCU 专用表单依赖 FreeRTOS (`osMutexWait`/`osWaitForever`)、STM32 HAL (`rtc.h`/`stm32f4xx_hal.h`)、或 MCU 专有字体 (`FontCHS12x12HT.h`/`GUIFontCHS12x12.h`)，无法在 Sim 中编译。
+
 - 自定义消息系统 `GM_MESSAGE` (MsgId + Param + Data联合体)
+  - `GM_FORM_ACTIVATED`(18) / `GM_FORM_DEACTIVATED`(19) — Phase 1 新增
 - 显示驱动：ST7789S via FSMC
+
+#### 中文显示原理
+
+SG1210 的中文显示依赖 GB2312 编码的直接字节索引，**转码为 UTF-8 会彻底破坏字符查找**。
+
+**数据流**:
+```
+应用层字符串 (StrsCHS.h, GB2312)
+  │  例: "电压" → GB2312: \xB5\xE7 \xD1\xB9
+  ▼
+emWin 文本绘制 (GUI_DispString)
+  ▼
+GUIPROP_UC_DispChar(U16P ch)        ← GUI_UC_Font.c
+  │  ch = (\xB5<<8) | \xE7 = 0xB5E7  (双字节 GB2312 码点)
+  ▼
+GUI_UC_FindFontItem(pFontList, ch)  ← 二分查找
+  │  遍历 TGUIFontItem[].Char (2字节 GB2312 编码)
+  ▼
+FontCHS24LTH.cpp / FontCHS16LTH.cpp
+  │  static const TGUIFontItem fiCharDotmx[] = {
+  │    {"一", ...},   ← GB2312 编码，2 字节
+  │    {"乙", ...},
+  │    ...
+  │  }
+  ▼
+返回点阵数据 DotMix[] → LCD_DrawBitmap 绘制
+```
+
+**关键数据结构** (`GUI_UC_Font.h`):
+```c
+typedef struct {
+    const uint8_t *Char;    // GB2312 编码的汉字，固定 2 字节
+    const uint8_t *DotMix;  // 点阵数据 (如 24×24=72 bytes)
+} TGUIFontItem;
+
+typedef struct {
+    uint32_t Count;
+    TGUIFontType Type;      // Width, Height, BytesPerLine
+    TGUIFontItem Items[];   // 按 GB2312 码点排序，支持二分查找
+} TGUIFontList;
+```
+
+**为何不能转 UTF-8**:
+1. `TGUIFontItem.Char` 固定 2 字节存储 GB2312 编码。若将 `FontCHS*.cpp` 转为 UTF-8，`"一"` 从 `\xD2\xBB`(2B) 变为 `\xE4\xB8\x80`(3B)，`FindFontItem` 的 `ucCode[0]<<8 | ucCode[1]` 将读到错误码点
+2. Form 文件中的中文字符串与字库文件使用同一套 GB2312 编码，转码导致 UI 显示乱码
+3. `StrsCHS.h` 中所有多语言字符串均为 GB2312，通过 `GUI_DispString` 直接送入上述管线
 
 ### 设备寄存器模型
 - 所有设备状态存储在编号"寄存器"中（类似 Modbus 寄存器模型）
@@ -175,11 +321,77 @@ extern "C" {
 - 模拟器：`<windows.h>` + Win32 API
 - MCU：STM32 HAL 外设头文件 (`gpio.h`、`rtc.h` 等)
 
+#### Sim 不可编译的 MCU 文件类型
+
+以下类型的文件依赖 MCU 专有基础设施，**禁止加入 vcxproj**：
+- FreeRTOS API (`osMutexWait`/`osMutexRelease`/`osWaitForever`/`portMAX_DELAY`)
+- STM32 HAL 头文件 (`stm32f4xx_hal.h`、`rtc.h`、`gpio.h`、`cmsis_os.h`)
+- MCU 字体 (`FontCHS12x12HT.h`、`GUIFontCHS12x12.h`)
+- MCU 外设 (`IndLED.h`、`KeyBoard.h`、`RNGen.h`)
+- `TGUIState::mutexGUI` 字段仅在 `#ifndef __vmSIMULATOR__` 下存在
+
+正确做法是在 `GUICntr.cpp` 中用 `#ifndef __vmSIMULATOR__` 条件编译隔离，而非试图让它们通过 Sim 编译。
+
+#### GForm API 速查
+
+```cpp
+// 生命周期
+gform::Init();           // 初始化导航栈和消息队列（不清空注册表）
+gform::Tick();           // 10ms Tick — 排空延迟消息 + 投递 GM_TIMER_TICK
+gform::Run();            // 返回当前栈深度
+
+// 注册
+gform::RegisterForm(id, &form, "name");
+gform::FindForm(id);     // → const FormRecord*
+gform::UnregisterForm(id);
+
+// 导航
+gform::PushForm(id, para);
+gform::ReplaceForm(id, para);
+gform::PopForm();
+gform::GetCurrentFormId();
+
+// 消息 （SendMsg/PostMsg 避免 <Windows.h> SendMessage/PostMessage 宏冲突）
+gform::SendMsg(msgId, param, value);
+gform::SendMsgPtr(msgId, param, data);
+gform::PostMsg(msgId, param, value);     // 延迟到下次 Tick 投递
+gform::BroadcastMsg(msgId, param, value);
+gform::KeyEvent(key, pressedCnt);
+
+// 容量限制
+kMaxForms = 32;    // 注册表容量
+kMaxStack = 16;    // 导航栈深度
+```
+
 ## 注意事项
 
+**文件与权限**
 - 允许在 `D:\Works\SilverGrid\SG1210\Firmware\SG1210v21` 及其子目录中读写文件
 - 允许在 `D:\Works\SilverGrid\SG1210\Firmware\SG1210v21` 及其子目录中执行 Bash 命令
+
+**编译目标**
 - MCU 固件面向 ARM Compiler V6 编译
 - 模拟器面向 MSVC (Visual Studio 2022) 编译
+- 模拟器是单线程的 — `gform::platform::Lock` 在 Sim 下为空操作
+
+**编码**
 - 中文注释主要在 Application 和 Drivers/Peripherals 层
 - CSG 图像编解码器代码遵循 Google C++ 规范（英文注释）
+- **编码转换规则**:
+  - ❌ Form 文件、`System/Strings/`、`FontCHS*` 字库 → **禁止转码**（中文显示管线依赖 GB2312 字节索引）
+  - ✅ 其余所有旧文件 → 可安全转为 UTF-8 with BOM
+- 中文显示原理见"核心架构 → GUI 架构 → 中文显示原理"；参考文件: `GUI_UC_Font.c`、`FontCHS24LTH.cpp`
+
+**GUI 表单**
+- 新增 WID_ 常量必须在 `GUICntr.h`（`#define`）和 `GForm.h`（`constexpr`）**两处同步**
+- Sim 编译不通过的文件不应强行加入 vcxproj，应通过 `#ifndef __vmSIMULATOR__` 隔离
+- `gform::SendMsg`/`PostMsg` 命名是为了避免 `<Windows.h>` 的 `SendMessageA/W`、`PostMessageA/W` 宏冲突
+
+**Git**
+- `Sim/` 目录曾有独立 `.git` 导致变更无法跟踪，已通过 `rm -rf Sim/.git` 修复
+- 不要在 Sim 下重建独立的 `.git` 目录
+
+**MSBuild**
+- Git Bash 中使用 `-p:` 而非 `/p:`
+- 使用 `-m:1` 避免 PDB 文件锁定 (C1041)
+- 编译前确认 vcxproj 的 `<ClCompile>` 列表与实际文件一致

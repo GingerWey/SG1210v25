@@ -7,6 +7,7 @@
   Silver Grid Technology
   Date       : 2023.12.05
   Updated    : 2026.06.24 (GM_FORM_ACTIVATED / GM_FORM_DEACTIVATED added)
+               2026.06.25 (TOUCH_UP/DOWN/MOVE sub-type constants for GM_TOUCH)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_MESSAGE_H
@@ -30,7 +31,13 @@ extern "C" {
 #define GM_HIDE                       9     // windows has just received the hide command 
 #define GM_FGND                      10     // window has been made top of window stack 
 #define GM_BGND                      11     // window has just been put to bottom of stack 
-#define GM_TOUCH                     12     // touch screen message 
+#define GM_TOUCH                     12     // touch screen message
+
+// Touch event sub-types (in Param field of GM_TOUCH)
+#define TOUCH_UP                     0      // Pen/finger released
+#define TOUCH_DOWN                   1      // Pen/finger pressed
+#define TOUCH_MOVE                   2      // Pen/finger moved while pressed
+// Coordinate encoding in Data.v: (uint16_t x << 16) | (uint16_t y)
 #define GM_KEYDOWN                   13     // Key has been pressed 
 #define GM_KEYPRESS                  14     // Key has been pressed and hold
 #define GM_KEYUP                     15     // Key has been released 

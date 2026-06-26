@@ -321,6 +321,38 @@ CSG_ErrCode DecodeAtlasHeader(const uint8_t* data, size_t len,
     return CSG_ErrCode::kOk;
 }
 
+// Read picture offsets from raw data.  CSGHeader::picOffset[1] is a flexible
+// array — sizeof(CSGHeader) only covers one entry, so GetPicOffset(i) reads
+// uninitialized memory for i > 0.  This function reads offsets directly from
+// the raw buffer and resolves them to absolute offsets.
+std::vector<uint32_t> ReadPicOffsets(const uint8_t* data, size_t len) {
+    if (len < 6) return {};
+    uint8_t picCountByte = data[5];
+    int picCount = picCountByte & kPicCountMask;
+    if (picCount == 0 || picCount > kCsgMaxPicCount) return {};
+    bool useRelative = (picCountByte & kPicOffsetRelFlag) != 0;
+
+    size_t offTableSize = static_cast<size_t>(picCount) * kCsgPicOffsetEntrySize;
+    if (6 + offTableSize > len) return {};
+
+    std::vector<uint32_t> offsets(picCount);
+    if (useRelative) {
+        offsets[0] = data[6] | (static_cast<uint32_t>(data[7]) << 8);
+        for (int i = 1; i < picCount; ++i) {
+            uint32_t rel = data[6 + i * 2]
+                         | (static_cast<uint32_t>(data[6 + i * 2 + 1]) << 8);
+            offsets[i] = offsets[i - 1] + rel;
+            if (offsets[i] > kCsgMaxPicOffset) return {};
+        }
+    } else {
+        for (int i = 0; i < picCount; ++i) {
+            offsets[i] = data[6 + i * 2]
+                       | (static_cast<uint32_t>(data[6 + i * 2 + 1]) << 8);
+        }
+    }
+    return offsets;
+}
+
 CSG_ErrCode DecodePictureHeader(const uint8_t* data, size_t maxLen,
                                  CSGPicture& picture) {
     if (maxLen < 16)
@@ -409,12 +441,17 @@ CSG_ErrCode ReadCsgFile(const std::wstring& path, CSGAtlas& atlas) {
     CSG_ErrCode err = DecodeAtlasHeader(data.data(), data.size(), header);
     if (err != CSG_ErrCode::kOk) return err;
 
+    // Read offsets directly — CSGHeader::picOffset[1] can't hold >1 entry
+    std::vector<uint32_t> offsets = ReadPicOffsets(data.data(), data.size());
+    if (offsets.empty())
+        return CSG_ErrCode::kErrOffsetTableBroken;
+
     atlas.bytes = std::move(data);
     atlas.pictures.clear();
 
-    int picCount = static_cast<int>(header.GetPicCount());
+    int picCount = static_cast<int>(offsets.size());
     for (int i = 0; i < picCount; ++i) {
-        uint32_t offset = header.GetPicOffset(i);
+        uint32_t offset = offsets[i];
         if (offset >= atlas.bytes.size())
             return CSG_ErrCode::kErrOffsetTableBroken;
 

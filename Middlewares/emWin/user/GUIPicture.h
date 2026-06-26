@@ -2,10 +2,11 @@
 /*
   GUI Picture
 
-  ¶¨ÒåGUIÍ¼Æ¬
+  ï¿½ï¿½ï¿½ï¿½GUIÍ¼Æ¬
 
   Silver Grid Technology
-  Date       : 2023.12.05
+  Date       : 2023.12.05 (V1.10)
+  Updated    : 2026.06.25 (V1.11 â€” added picIndex parameter for CSG atlas)
 */
 //---------------------------------------------------------------------------
 #ifndef GUI_PICTURE_H
@@ -38,7 +39,9 @@ typedef struct tagGUIPICTURE
 // Global methods
 //---------------------------------------------------------------------------
 // Draw Picture
-void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0);
+// picIndex: sub-picture index within an atlas (0-based, default 0)
+void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0,
+                     int picIndex = 0);
 //---------------------------------------------------------------------------
 #ifdef __cplusplus
 }

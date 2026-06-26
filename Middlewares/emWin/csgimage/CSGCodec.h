@@ -111,6 +111,12 @@ bool EncodeAtlas(CSGAtlas& atlas);
 CSG_ErrCode DecodeAtlasHeader(const uint8_t* data, size_t len,
                                CSGHeader& header);
 
+/// Read picture offsets from raw CSG data into a vector.
+/// Handles absolute / relative offset modes per §3.2.2-3.2.3.
+/// Fixes the flexible-array limitation of CSGHeader::GetPicOffset().
+/// Returns empty vector on error.
+std::vector<uint32_t> ReadPicOffsets(const uint8_t* data, size_t len);
+
 /// Decode a single picture header from a pointer (in a loaded atlas).
 CSG_ErrCode DecodePictureHeader(const uint8_t* data, size_t maxLen,
                                  CSGPicture& picture);

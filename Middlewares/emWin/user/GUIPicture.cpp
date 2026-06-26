@@ -5,7 +5,8 @@
   Display GUI picture
 
   Silver Grid Technology
-  Date       : 2023.12.28
+  Date       : 2023.12.28 (V1.10)
+  Updated    : 2026.06.25 (V1.11 — pass picIndex to CSG_DrawPicture for atlas support)
 */
 //---------------------------------------------------------------------------
 #include "GUIPicture.h"
@@ -18,20 +19,20 @@
 // Global methods
 //---------------------------------------------------------------------------
 // Draw Picture
-void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0)
+void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0, int picIndex)
 {
-  
+
   if( nullptr == pPic || nullptr == pPic->pData)
     return ;
-    
+
   switch( pPic->Type )
     {
     case ID_BITMAP:
       {
       const TGUIBitmap *pBmp = (const TGUIBitmap*)(pPic->pData);
-      
+
       LCDX_Bitmap_Draw( pBmp, x0, y0 );
-      
+
       break;
       }
 
@@ -44,7 +45,7 @@ void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0)
 
     case ID_CSG:
       {
-      CSG_DrawPicture(pPic, x0, y0);
+      CSG_DrawPicture(pPic, x0, y0, picIndex, 100);
       break;
       }
 

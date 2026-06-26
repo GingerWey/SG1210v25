@@ -2,13 +2,14 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPMainForm.cpp
- Version     : V1.10
+ Version     : V1.11
  By          : Silver Grid Technology
 
  Description : Main operation form implementation.
                Primary data display and measurement screen.
 
- Date        : 2023.12.05
+ Date        : 2023.12.05 (V1.10 — original implementation)
+              2026.06.25 (V1.11 — added GM_TOUCH touch screen handler)
 */
 //-----------------------------------------------------------------------------//-----------------------------------------------------------------------------
 #include "GPMainForm.h"
@@ -1477,6 +1478,29 @@ static void _OnMessage(GM_MESSAGE* pMsg)
 
         break;
     }
+
+#if GUI_SUPPORT_TOUCH
+    case GM_TOUCH: {
+        // Only act on touch up (avoid accidental navigation on drag)
+        if (pMsg->Param == TOUCH_UP) {
+            uint16_t x = static_cast<uint16_t>((pMsg->Data.v >> 16) & 0xFFFF);
+            uint16_t y = static_cast<uint16_t>(pMsg->Data.v & 0xFFFF);
+            (void)y;  // y unused for MainForm zone layout
+
+            // Touch zone layout (320x240):
+            //   Left  1/3 (x < 106):  device info
+            //   Right 1/3 (x > 213):  menu
+            //   Center:                device info
+            if (x > 213) {
+                gform::PushForm(WID_MenuForm, nullptr);
+            } else {
+                gform::PushForm(WID_DevInfoForm, nullptr);
+            }
+        }
+        pMsg->MsgId = 0;
+        break;
+    }
+#endif
 
     //case GM_TIMERECV:
     //  {

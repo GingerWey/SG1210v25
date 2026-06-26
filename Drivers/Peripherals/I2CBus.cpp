@@ -1,10 +1,10 @@
-//-----------------------------------------------------------------------------
+ï»¿//-----------------------------------------------------------------------------
 /*
  File        : I2CBus.cpp
  Version     : V1.01
- By          : ÒøÍø¿Æ¼¼
+ By          : é“¶ç½‘ç§‘æŠ€
 
- Description : I2C×ÜÏßÇý¶¯
+ Description : I2Cæ€»çº¿é©±åŠ¨
         
  Date        : 2023.12.17
 */
@@ -16,21 +16,21 @@
 
 #include <cmsis_os.h>
 //=============================================================================
-// ¾Ö²¿ºê
+// å±€éƒ¨å®
 //-----------------------------------------------------------------------------
-// ¹Ü½Å²Ù×÷
+// ç®¡è„šæ“ä½œ
 #define  Set_SCL_High            SI2C_SCL_HIGH
 #define  Set_SCL_Low             SI2C_SCL_LOW
 #define  Set_SDA_High            SI2C_SDA_HIGH
 #define  Set_SDA_Low             SI2C_SDA_LOW 
 #define  Get_SDA_State           SI2C_SDA_Input
 //=============================================================================
-// ¾Ö²¿Êý¾Ý
+// å±€éƒ¨æ•°æ®
 //-----------------------------------------------------------------------------
-// ×ÜÏß·ÃÎÊ»¥³â
+// æ€»çº¿è®¿é—®äº’æ–¥
 static osMutexId  mutexI2CBus = nullptr;
 //==============================================================================
-// IIC×ÜÏßÊ±Ðò²Ù×÷
+// IICæ€»çº¿æ—¶åºæ“ä½œ
 /*******************************************************************************
 * Function Name  : iic_Delay
 * Description    : Short delay
@@ -58,8 +58,8 @@ static void iic_Delay(void)
 static int iic_Start(void)
 {
   
-  // µ± SCL ´¦ÓÚ¸ßµçÆ½Ê±£¬SDA ÓÉ¸ßµçÆ½±ä³ÉµÍµçÆ½Ê±¹¹³ÉÒ»¸ö¿ªÊ¼Ìõ¼þ£¬
-  // ¶Ô Slave µÄËùÓÐ²Ù ×÷¾ù±ØÐëÓÉ¿ªÊ¼Ìõ¼þ¿ªÊ¼¡£ 
+  // å½“ SCL å¤„äºŽé«˜ç”µå¹³æ—¶ï¼ŒSDA ç”±é«˜ç”µå¹³å˜æˆä½Žç”µå¹³æ—¶æž„æˆä¸€ä¸ªå¼€å§‹æ¡ä»¶ï¼Œ
+  // å¯¹ Slave çš„æ‰€æœ‰æ“ ä½œå‡å¿…é¡»ç”±å¼€å§‹æ¡ä»¶å¼€å§‹ã€‚ 
   Set_SDA_High;
   iic_Delay();
   Set_SCL_High;
@@ -91,8 +91,8 @@ static int iic_Start(void)
 static void iic_Stop(void)
 {
   
-  // µ± SCL ´¦ÓÚ¸ßµçÆ½Ê±£¬SDA ÓÉµÍµçÆ½±ä³É¸ßµçÆ½Ê±¹¹³ÉÒ»¸öÍ£Ö¹Ìõ¼þ£¬
-  // ´ËÊ± Slave µÄËùÓÐ²Ù×÷¾ùÍ£Ö¹£¬×ÜÏß½øÈë´ý»ú×´Ì¬¡£
+  // å½“ SCL å¤„äºŽé«˜ç”µå¹³æ—¶ï¼ŒSDA ç”±ä½Žç”µå¹³å˜æˆé«˜ç”µå¹³æ—¶æž„æˆä¸€ä¸ªåœæ­¢æ¡ä»¶ï¼Œ
+  // æ­¤æ—¶ Slave çš„æ‰€æœ‰æ“ä½œå‡åœæ­¢ï¼Œæ€»çº¿è¿›å…¥å¾…æœºçŠ¶æ€ã€‚
   Set_SDA_Low ;
   iic_Delay();
   Set_SCL_Low ;
@@ -114,12 +114,12 @@ static void iic_Stop(void)
 static void iic_BusStop(void)
 {
   
-  //Ê±ÖÓ¿ªÊ¼
+  //æ—¶é’Ÿå¼€å§‹
   iic_Start();
 
   iic_Delay();
   
-  //Í£Ö¹×ÜÏß
+  //åœæ­¢æ€»çº¿
   iic_Stop();
 }
 /*******************************************************************************
@@ -185,9 +185,9 @@ static void iic_SendNAck(void)
 static int iic_WaitAck(void)
 {
   
-  // Êý¾Ý´«ÊäÒÔ 8 Î»ÐòÁÐ½øÐÐ¡£
-  // Slave ÔÚµÚ¾Å¸öÊ±ÖÓÖÜÆÚÊ±½« SDA ÖÃÎ»ÎªµÍµçÆ½£¬
-  // ¼´ËÍ³öÒ» ¸öÈ·ÈÏÐÅºÅ£¨Acknowledge bit,ÒÔÏÂ¼ò³Æ¡°ACK¡±£©£¬±íÃ÷Êý¾ÝÒÑ¾­±»ÆäÊÕµ½¡£
+  // æ•°æ®ä¼ è¾“ä»¥ 8 ä½åºåˆ—è¿›è¡Œã€‚
+  // Slave åœ¨ç¬¬ä¹ä¸ªæ—¶é’Ÿå‘¨æœŸæ—¶å°† SDA ç½®ä½ä¸ºä½Žç”µå¹³ï¼Œ
+  // å³é€å‡ºä¸€ ä¸ªç¡®è®¤ä¿¡å·ï¼ˆAcknowledge bit,ä»¥ä¸‹ç®€ç§°â€œACKâ€ï¼‰ï¼Œè¡¨æ˜Žæ•°æ®å·²ç»è¢«å…¶æ”¶åˆ°ã€‚
   Set_SCL_Low;
   iic_Delay();
   Set_SDA_High;
@@ -213,12 +213,12 @@ static int iic_WaitAck(void)
 * Description    : Send one byte data to I2C Device
 * Input          : uData :  Data to be send
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
 static int iic_SendByte(uint32_t uData)
 {
   
-  //Ð´8¸öÎ»
+  //å†™8ä¸ªä½
   for( int iIdx = 8; iIdx > 0; iIdx-- )
     {
     // CLK = 0
@@ -239,7 +239,7 @@ static int iic_SendByte(uint32_t uData)
 
   Set_SCL_Low;
   
-  // µÈ´ý¶Ô·½ÏìÓ¦
+  // ç­‰å¾…å¯¹æ–¹å“åº”
   int iRes = iic_WaitAck();
   if( 0 != iRes )
     iic_Stop();
@@ -251,7 +251,7 @@ static int iic_SendByte(uint32_t uData)
 * Description    : Receive one byte data from I2C  Device
 * Input          : None
 * Output         : None
-* Return         : ¶Á»ØµÄ½á¹û
+* Return         : è¯»å›žçš„ç»“æžœ
 *******************************************************************************/
 static uint32_t iic_ReadByte(void)
 { 
@@ -259,7 +259,7 @@ static uint32_t iic_ReadByte(void)
   uint32_t uRes = 0;
 
   Set_SDA_High;
-  // ¶Á8¸öÎ»
+  // è¯»8ä¸ªä½
   for (int iIdx = 7; iIdx >= 0; --iIdx)
     {
     uRes <<= 1;
@@ -270,7 +270,7 @@ static uint32_t iic_ReadByte(void)
     Set_SCL_High;
     iic_Delay();
 
-    // ¶ÁÈ¡Êý¾Ý ¶Á5´ÎÅÐ¶Ï×´Ì¬
+    // è¯»å–æ•°æ® è¯»5æ¬¡åˆ¤æ–­çŠ¶æ€
     int iHigh = 0;
     for( int iTry = 0; iTry < 5; iTry++ )
       {
@@ -290,7 +290,7 @@ static uint32_t iic_ReadByte(void)
   return uRes; 
 }
 //=============================================================================
-// È«¾Ö·½·¨
+// å…¨å±€æ–¹æ³•
 //-----------------------------------------------------------------------------
 /*******************************************************************************
 * Function Name  : I2CBus_WriteReg
@@ -300,10 +300,10 @@ static uint32_t iic_ReadByte(void)
 *                  pvBuf:      Pointer of Data cache
 *                  uNumBytes:  Bytes of data
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
-// Ð´¼Ä´æÆ÷Êý¾Ý
-// ·µ»Ø£º  0 ³É¹¦   !=0: Ê§°Ü
+// å†™å¯„å­˜å™¨æ•°æ®
+// è¿”å›žï¼š  0 æˆåŠŸ   !=0: å¤±è´¥
 int I2CBus_WriteReg( uint32_t    uSlave, uint32_t uReg, 
                      const void *pvBuf,  uint32_t uNumBytes)
 {
@@ -348,10 +348,10 @@ int I2CBus_WriteReg( uint32_t    uSlave, uint32_t uReg,
 *                  pvBuf:      Pointer of Data cache
 *                  uNumBytes:  Bytes of data
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
-// ¶Á¼Ä´æÆ÷Êý¾Ý
-// ·µ»Ø£º  ¶Á»ØµÄÊý¾Ý
+// è¯»å¯„å­˜å™¨æ•°æ®
+// è¿”å›žï¼š  è¯»å›žçš„æ•°æ®
 int I2CBus_ReadReg( uint32_t    uSlave, uint32_t uReg, 
                     const void *pvBuf,  uint32_t uNumBytes)
 {
@@ -407,10 +407,10 @@ int I2CBus_ReadReg( uint32_t    uSlave, uint32_t uReg,
 *                  pvBuf:      Pointer of Data cache
 *                  uNumBytes:  Bytes of data
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
-// Ö±½ÓÐ´Êý¾Ý
-// ·µ»Ø£º  0 ³É¹¦   !=0: Ê§°Ü
+// ç›´æŽ¥å†™æ•°æ®
+// è¿”å›žï¼š  0 æˆåŠŸ   !=0: å¤±è´¥
 int I2CBus_Send(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
 {
   
@@ -419,7 +419,7 @@ int I2CBus_Send(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
   
   iic_Delay();
   
-  if( 0 != iic_SendByte( uSlave ) )      // Éæ¼°µÄÐ¾Æ¬¾ùÊÇR/nW
+  if( 0 != iic_SendByte( uSlave ) )      // æ¶‰åŠçš„èŠ¯ç‰‡å‡æ˜¯R/nW
     {
     iic_Stop();
     return -2;
@@ -446,10 +446,10 @@ int I2CBus_Send(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
 *                  pvBuf:      Pointer of Data cache
 *                  uNumBytes:  Bytes of data
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
-// Ö±½Ó¶ÁÊý¾Ý
-// ·µ»Ø£º  ¶Á»ØµÄÊý¾Ý
+// ç›´æŽ¥è¯»æ•°æ®
+// è¿”å›žï¼š  è¯»å›žçš„æ•°æ®
 int I2CBus_Read(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
 {
   
@@ -458,7 +458,7 @@ int I2CBus_Read(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
   
   iic_Delay();
   
-  if( 0 != iic_SendByte( uSlave | 0x01 ) )  // Éæ¼°µÄÐ¾Æ¬¾ùÊÇR/nW
+  if( 0 != iic_SendByte( uSlave | 0x01 ) )  // æ¶‰åŠçš„èŠ¯ç‰‡å‡æ˜¯R/nW
     {
     iic_Stop();
     return -6;
@@ -482,13 +482,13 @@ int I2CBus_Read(uint32_t uSlave, const void *pvBuf, uint32_t uNumBytes)
 }
 /*******************************************************************************
 * Function Name  : I2CBus_Init
-* Description    : ³õÊ¼»¯ I2C bus
+* Description    : åˆå§‹åŒ– I2C bus
 * Input          : None
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
-// ³õÊ¼»¯
-// 0£º³É¹¦£¬ ÆäËü£ºÊ§°Ü
+// åˆå§‹åŒ–
+// 0ï¼šæˆåŠŸï¼Œ å…¶å®ƒï¼šå¤±è´¥
 int I2CBus_Init()
 {
   
@@ -512,10 +512,10 @@ int I2CBus_Init()
 }
 /*******************************************************************************
 * Function Name  : I2CBus_Acquire
-* Description    : ÉêÇëÕ¼ÓÃ×ÜÏß
+* Description    : ç”³è¯·å ç”¨æ€»çº¿
 * Input          : None
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
 int I2CBus_Acquire()
 {
@@ -529,10 +529,10 @@ int I2CBus_Acquire()
 }
 /*******************************************************************************
 * Function Name  : I2CBus_Release
-* Description    : ÊÍ·ÅÕ¼ÓÃ×ÜÏß
+* Description    : é‡Šæ”¾å ç”¨æ€»çº¿
 * Input          : None
 * Output         : None
-* Return         : 0:³É¹¦  others=Ê§°Ü
+* Return         : 0:æˆåŠŸ  others=å¤±è´¥
 *******************************************************************************/
 int I2CBus_Release()
 {

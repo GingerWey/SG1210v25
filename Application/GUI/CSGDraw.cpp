@@ -1,14 +1,15 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.cpp
- Version     : V1.00
+ Version     : V1.01
  By          : Wey. Silver Grid
 
  Description : CSG image drawing -- MCU-safe implementation.
                Follows the LCDX_Bitmap_Draw pattern with dual MCU / simulator
                drawing paths.  Uses streaming decoder (zero heap vectors).
 
- Date        : 2026.06.24
+ Date        : 2026.06.24 (V1.00 — initial implementation)
+              2026.06.25 (V1.01 — saturation helpers, atlas sub-picture, picIndex param)
 */
 //-----------------------------------------------------------------------------
 #include "CSGDraw.h"
@@ -148,24 +149,28 @@ static void CrmPixelToRgba(const uint8_t* src,
                            uint8_t* outRed, uint8_t* outGreen,
                            uint8_t* outBlue, uint8_t* outAlpha)
 {
+    // Use bit-extraction formulas matching CSGCommon.h (FromRGB565 etc.)
+    // — identical to full CSGDecoder's ConvertToRGBA output
     uint8_t r = 0, g = 0, b = 0, a = 255;
     switch (colorMode) {
     case 0x21: { // RGB565
         uint16_t v = src[0] | (src[1] << 8);
-        r = ((v >> 11) & 0x1F) * 255 / 31;
-        g = ((v >>  5) & 0x3F) * 255 / 63;
-        b = (v & 0x1F) * 255 / 31;
+        r = static_cast<uint8_t>((v >> 8) & 0xF8);
+        g = static_cast<uint8_t>((v >> 3) & 0xFC);
+        b = static_cast<uint8_t>((v << 3) & 0xF8);
         break;
     }
     case 0x22: { // BGR565
         uint16_t v = src[0] | (src[1] << 8);
-        b = ((v >> 11) & 0x1F) * 255 / 31;
-        g = ((v >>  5) & 0x3F) * 255 / 63;
-        r = (v & 0x1F) * 255 / 31;
+        b = static_cast<uint8_t>((v >> 8) & 0xF8);
+        g = static_cast<uint8_t>((v >> 3) & 0xFC);
+        r = static_cast<uint8_t>((v << 3) & 0xF8);
         break;
     }
     case 0x31: // RGB666
-        r = src[0] * 255 / 63; g = src[1] * 255 / 63; b = src[2] * 255 / 63;
+        r = static_cast<uint8_t>((src[0] & 0xFC) | ((src[2] << 2) & 0x03));
+        g = static_cast<uint8_t>(((src[0] & 0x03) << 4) | ((src[1] >> 4) & 0x0F));
+        b = static_cast<uint8_t>(((src[1] & 0x0F) << 2) | ((src[2] >> 6) & 0x03));
         break;
     case 0x33: // RGB888
         r = src[0]; g = src[1]; b = src[2];
@@ -179,119 +184,183 @@ static void CrmPixelToRgba(const uint8_t* src,
 }
 
 //=============================================================================
-// Public API
+// Saturation helpers
 //=============================================================================
 
-void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0)
+/// Apply saturation to a single RGBA pixel (in-place).
+/// sat: 0–100 (100 = no change, 0 = grayscale)
+static inline void SaturatePixel(uint8_t* r, uint8_t* g, uint8_t* b, int sat)
 {
-    CSG_DrawPictureEx(pPic, 0, nullptr, x0, y0);
+    if (sat >= 100) return;
+    if (sat < 0) sat = 0;
+
+    // ITU-R BT.601 luma
+    int gray = (static_cast<int>(*r) * 299 +
+                static_cast<int>(*g) * 587 +
+                static_cast<int>(*b) * 114) / 1000;
+
+    int factor = sat * 10;  // 0..1000
+    *r = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*r) * factor) / 1000);
+    *g = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*g) * factor) / 1000);
+    *b = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*b) * factor) / 1000);
 }
 
-void CSG_DrawPictureEx(const TGUIPicture* pPic,
-                       int picIndex,
-                       const uint8_t* extPalette,
-                       int x0, int y0)
+/// Apply saturation to a CRM-encoded palette.
+/// palBytes: pointer to palette data, modified in-place.
+/// entryCount: number of palette entries
+/// bpc: bytes per color
+/// colorMode: ColorMode enum value
+/// sat: 0–100
+static void SaturatePalette(uint8_t* palBytes, int entryCount, int bpc,
+                            uint8_t colorMode, int sat)
+{
+    if (sat >= 100 || palBytes == nullptr || entryCount <= 0) return;
+    if (sat < 0) sat = 0;
+
+    for (int i = 0; i < entryCount; ++i) {
+        uint8_t* entry = palBytes + i * bpc;
+        uint8_t r = 0, g = 0, b = 0, a = 0;
+        CrmPixelToRgba(entry, colorMode, &r, &g, &b, &a);
+        SaturatePixel(&r, &g, &b, sat);
+
+        // Pack back to CRM format
+        switch (colorMode) {
+        case 0x21: { // RGB565
+            uint16_t v = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+            entry[0] = static_cast<uint8_t>(v & 0xFF);
+            entry[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
+            break;
+        }
+        case 0x22: { // BGR565
+            uint16_t v = ((b >> 3) << 11) | ((g >> 2) << 5) | (r >> 3);
+            entry[0] = static_cast<uint8_t>(v & 0xFF);
+            entry[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
+            break;
+        }
+        case 0x31: // RGB666
+            entry[0] = r * 63 / 255; entry[1] = g * 63 / 255; entry[2] = b * 63 / 255;
+            break;
+        case 0x33: // RGB888
+            entry[0] = r; entry[1] = g; entry[2] = b;
+            break;
+        case 0x41: // RGB8888
+            entry[0] = r; entry[1] = g; entry[2] = b; entry[3] = a;
+            break;
+        default: break;
+        }
+    }
+}
+
+//=============================================================================
+// Unified CSG drawing (streaming decoder, Sim + MCU single path)
+//=============================================================================
+
+/// Batch size in pixels — balance between GUI_ALLOC footprint and call count
+constexpr int kCsgBatchPixels = 128;
+
+void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
+                     int picIndex, int saturation)
 {
     if (pPic == nullptr || pPic->pData == nullptr) return;
     if (pPic->Type != ID_CSG) return;
 
+    if (saturation < 10) saturation = 10;
+    if (saturation > 100) saturation = 100;
+
     const uint8_t* csgData = static_cast<const uint8_t*>(pPic->pData);
 
-    // Simulator: use full decoder (handles all CAS modes)
-    // MCU: will use streaming decoder (CAS 0/1/3 only)
-#ifdef __vmSIMULATOR__
-    CSGDecoder decoder;
-    DecoderResult r = decoder.DecodePicture(csgData, pPic->Size);
-    if (r.error != CSG_ErrCode::kOk || r.pixels.empty()) return;
-
-    const uint8_t* px = r.pixels.data();
-    for (int y = 0; y < r.height; ++y) {
-        for (int x = 0; x < r.width; ++x) {
-            uint8_t red=*px++, green=*px++, blue=*px++, alpha=*px++;
-            if (alpha > 0) {
-                uint32_t color = ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
-                GUI_SetColor(color);
-                GUI_DrawPixel(x0 + x, y0 + y);
-            }
-        }
-    }
-    return;
-#else
-    // -- MCU streaming path (below) ------------------------------------
-
-    // -- Parse picture header --------------------------------------------
+    // 1. Parse picture header (handles atlas sub-pictures)
     CSGPicture    pic;
-    const uint8_t* compData   = nullptr;
-    size_t         compSize   = 0;
+    const uint8_t* compData = nullptr;
+    size_t         compSize = 0;
 
     if (!ParseCsgPicture(csgData, pPic->Size, picIndex,
                          &pic, &compData, &compSize))
         return;
 
-    // -- Allocate line buffer from GUIHEAP ------------------------------
-    GUI_HMEM hLineBuf = GUI_ALLOC_AllocZero(CSG_LINEBUF_SIZE);
-    if (hLineBuf == 0)
-        return;
-    uint8_t* lineBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hLineBuf));
-
-    // -- Read embedded palette (if any) ---------------------------------
-    const uint8_t* embeddedPalette = nullptr;
     int bpc = pic.BytesPerColor();
     int crn = pic.crn;
-
-    if (crn > 0 && pic.ppos > 0 && pic.ppos + (crn * bpc) <= pic.size) {
-        embeddedPalette = compData + pic.ppos - kCsgPictureHeaderSize;
-    }
-
-    const uint8_t* activePalette = (extPalette != nullptr)
-                                   ? extPalette : embeddedPalette;
-
-    // -- Init streaming decoder -----------------------------------------
-    CSGDecoderState state;
+    int totalPixels = pic.width * pic.height;
     ColorMode outMode = static_cast<ColorMode>(pic.colorMode);
 
-    CSG_ErrCode err = CsgDecodeInit(&state, &pic, lineBuf,
-                                    activePalette, outMode);
-    if (err != CSG_ErrCode::kOk) {
-        GUI_ALLOC_Free(hLineBuf);
-        return;
+    // 2. Read embedded palette
+    const uint8_t* embPalette = nullptr;
+    if (crn > 0 && pic.ppos > 0 &&
+        pic.ppos + static_cast<uint16_t>(crn * bpc) <= pic.size) {
+        embPalette = compData + pic.ppos - kCsgPictureHeaderSize;
     }
 
-    // MUST set stream AFTER Init (clears it to nullptr)
-    state.stream = compData + (pic.dpos - kCsgPictureHeaderSize);
+    // 3. Apply saturation to palette
+    uint8_t* satPalBuf = nullptr;
+    GUI_HMEM hPalBuf = 0;
+    const uint8_t* activePalette = embPalette;
+    if (saturation != 100 && embPalette != nullptr && crn > 0) {
+        int palBytes = crn * bpc;
+        hPalBuf = GUI_ALLOC_AllocZero(palBytes);
+        if (hPalBuf != 0) {
+            satPalBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hPalBuf));
+            memcpy(satPalBuf, embPalette, palBytes);
+            SaturatePalette(satPalBuf, crn, bpc, pic.colorMode, saturation);
+            activePalette = satPalBuf;
+        }
+    }
 
-    // -- Decode and draw row by row -------------------------------------
-    int width  = pic.width;
-    int height = pic.height;
-    int totalPixels = width * height;
+    // 4. Allocate CRM output buffer — one row (minimal)
+    int maxBatch = pic.width;
+    if (maxBatch > totalPixels) maxBatch = totalPixels;
+    int bufBytes = maxBatch * bpc;
+    GUI_HMEM hOutBuf = GUI_ALLOC_AllocZero(bufBytes);
+    if (hOutBuf == 0) {
+        if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
+        return;
+    }
+    uint8_t* outBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hOutBuf));
 
-    // CsgDecodePixels always outputs CRM data (bpc bytes per pixel).
-    // The palette is already applied during decompression.
-    int maxPixelsPerBatch = CSG_LINEBUF_SIZE / bpc;  // e.g. 1024/2 = 512 for RGB565
+    // 5. Init streaming decoder (unified Sim+MCU path, CAS 0/1/2/3)
+    CSGDecoderState state;
+    if (CsgDecodeInit(&state, &pic, outBuf, activePalette, outMode)
+        != CSG_ErrCode::kOk) {
+        GUI_ALLOC_Free(hOutBuf);
+        if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
+        return;
+    }
+    state.stream     = compData + (pic.dpos - kCsgPictureHeaderSize);
+    state.streamSize = compSize - (pic.dpos - kCsgPictureHeaderSize);
 
+    int width = pic.width;
     while (state.pixelsDecoded < totalPixels) {
-        int needed = totalPixels - state.pixelsDecoded;
-        int batchSize = (needed > maxPixelsPerBatch) ? maxPixelsPerBatch : needed;
-
         int prevDecoded = state.pixelsDecoded;
-        CsgDecodePixels(&state, lineBuf, batchSize);
-        int actuallyDecoded = state.pixelsDecoded - prevDecoded;
+        CSG_ErrCode decErr = CsgDecodePixels(&state, outBuf, maxBatch);
+        int n = state.pixelsDecoded - prevDecoded;
+        if (decErr != CSG_ErrCode::kOk || n == 0) break;  // error or stall
+        for (int i = 0; i < n; ++i) {
+            int pxIdx = prevDecoded + i;
+            int row   = pxIdx / width;
+            int col   = pxIdx % width;
+            const uint8_t* crm = outBuf + i * bpc;
 
-        for (int i = 0; i < actuallyDecoded; ++i) {
-            int px = prevDecoded + i;
-            int row = px / width;
-            int col = px % width;
+            // Transparency: CRN>0 → CRI=0 maps to palette[0], skip
+            if (crn > 0 && activePalette != nullptr) {
+                bool isTransp = true;
+                for (int k = 0; k < bpc; ++k) {
+                    if (crm[k] != activePalette[k]) { isTransp = false; break; }
+                }
+                if (isTransp) continue;
+            }
 
-            const uint8_t* crmPixel = lineBuf + (i * bpc);
             uint8_t red, green, blue, alpha;
-            CrmPixelToRgba(crmPixel, static_cast<uint8_t>(outMode),
-                           &red, &green, &blue, &alpha);
-
+            CrmPixelToRgba(crm, pic.colorMode, &red, &green, &blue, &alpha);
+            if (saturation != 100 && crn == 0)
+                SaturatePixel(&red, &green, &blue, saturation);
             DrawPixel(x0 + col, y0 + row, red, green, blue, alpha);
         }
     }
 
-    // -- Free line buffer -----------------------------------------------
-    GUI_ALLOC_Free(hLineBuf);
-#endif  // __vmSIMULATOR__
+    // Free DEFLATE intermediate buffer if allocated (GUI_ALLOC, works Sim+MCU)
+    if (state.deflateBufHandle != 0) {
+        GUI_ALLOC_Free(static_cast<GUI_HMEM>(state.deflateBufHandle));
+    }
+
+    GUI_ALLOC_Free(hOutBuf);
+    if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
 }

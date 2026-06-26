@@ -2,15 +2,14 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPSplashForm.cpp
- Version     : V1.13
+ Version     : V1.12
  By          : Wey. Silver Grid
 
  Description : Splash form — CSG decoder test rig.
-               Cycles through all 11 ImageRes sub-pictures × 6 saturation levels.
+               Cycles through all 11 ImageRes sub-pictures.
                Logs GUI_ALLOC memory stats to detect leaks.
 
- Date        : 2026.06.26 (V1.13 — saturation test: 100/80/60/40/20/10% cycle)
-              2026.06.26 (V1.12 — ImageRes cycle test + memory leak detection)
+ Date        : 2026.06.26 (V1.12 — ImageRes cycle test + memory leak detection)
               2023.12.05 (V1.10 — original implementation)
 */
 //-----------------------------------------------------------------------------//-----------------------------------------------------------------------------
@@ -32,7 +31,6 @@
 #include "PictureRes.h"
 #include "Graphics/ImageRes.h"
 #include "Strings/TextStrs.h"
-#include "CSGDraw.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +50,7 @@ static const struct {
     {picIdxMA_Logo78x18,       "Logo78x18",      78,19, "MiniLZ77"},
     {picIdxMA_ACPow32x59Cyan,  "ACPow32x59Cyan", 32,59, "MiniLZ77"},
     {picIdxMA_Ctrl78x61Cyan,   "Ctrl78x61Cyan",  78,61, "DEFLATE"},
-    {picIdxMA_Brkr56x60Cyan,   "Brkr59x60Cyan",  59,60, "DEFLATE"},
+    {picIdxMA_Brkr59x60Cyan,   "Brkr59x60Cyan",  59,60, "DEFLATE"},
     {picIdxMA_Battey44x24C1,   "Battey44x24C1",  44,24, "MiniLZ77"},
     {picIdxMA_Battey44x24C2,   "Battey44x24C2",  44,24, "MiniLZ77"},
     {picIdxMA_Battey44x24C3,   "Battey44x24C3",  44,24, "MiniLZ77"},
@@ -62,10 +60,6 @@ static const struct {
     {picIdxMA_Fire16x16,       "Fire16x16",      16,16, "RLE"},
 };
 static constexpr int kImageCount = sizeof(kImageList) / sizeof(kImageList[0]);
-
-// Saturation test levels (percent)
-static constexpr int kSatLevels[] = {100, 80, 60, 40, 20, 10};
-static constexpr int kSatCount   = sizeof(kSatLevels) / sizeof(kSatLevels[0]);
 
 //=============================================================================
 // Memory tracking
@@ -104,7 +98,6 @@ typedef struct tagFormState
 {
     uint32_t uNextTick;
     int      curImage;       // current index into kImageList
-    int      satIndex;       // current index into kSatLevels
     int      drawX, drawY;   // computed draw position (centered)
 } TFormState;
 
@@ -130,8 +123,7 @@ static void _DrawCurrentImage()
     s_memBaselineFree = freeBefore;
 
     // Draw the CSG image
-    int sat = kSatLevels[m_FormState.satIndex];
-    CSG_DrawPicture(&picMAImageRescsg, x, y, img.picIndex, sat);
+    GUI_DrawPicture(&picMAImageRescsg, x, y, img.picIndex);
 
     // ---- Debug overlay ----
     GUI_SetColor(GUI_WHITE);
@@ -142,7 +134,7 @@ static void _DrawCurrentImage()
     sprintf(buf, "[%d/%d] %s", m_FormState.curImage + 1, kImageCount, img.name);
     GUI_DispStringAt(buf, 4, 2);
 
-    sprintf(buf, "%dx%d  %s  sat=%d%%", img.w, img.h, img.casName, sat);
+    sprintf(buf, "%dx%d  %s", img.w, img.h, img.casName);
     GUI_DispStringAt(buf, 4, 18);
 
     int freeAfter = (int)GUI_ALLOC_GetNumFreeBytes();
@@ -193,7 +185,6 @@ static void _Show(const void* argument)
 {
     MemLog("_Show entry");
     m_FormState.curImage = 0;
-    m_FormState.satIndex = 0;
     _DrawCurrentImage();
     MemLog("_Show exit");
 }
@@ -208,13 +199,7 @@ static void _OnTick(uint32_t uTick)
     (void)uTick;  // gform::Tick() sends Data.v=0, use GUI_GetTime() instead
     uint32_t now = GUI_GetTime();
     if (now > m_FormState.uNextTick) {
-        // Cycle saturation first, then image
-        if (m_FormState.satIndex < kSatCount - 1) {
-            m_FormState.satIndex++;
-        } else {
-            m_FormState.satIndex = 0;
-            m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-        }
+        m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
         _DrawCurrentImage();
         m_FormState.uNextTick = now + 1500;
     }
@@ -228,24 +213,17 @@ static void _OnKeyUp(uint16_t uwKey)
     } else if (uwKey == KEY_ESCAPE) {
         MemLog("KEY_ESCAPE -> MainForm");
         gform::ReplaceForm(WID_MainForm, nullptr);
-    } else if (uwKey == ' ') {  // SPACE — advance saturation or next image
-        if (m_FormState.satIndex < kSatCount - 1) {
-            m_FormState.satIndex++;
-        } else {
-            m_FormState.satIndex = 0;
-            m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-        }
+    } else if (uwKey == ' ') {  // SPACE — manual next
+        m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
         _DrawCurrentImage();
         m_FormState.uNextTick = GUI_GetTime() + 5000;  // pause auto-cycle
     } else if (uwKey == KEY_LEFT) {
         if (m_FormState.curImage > 0) {
             m_FormState.curImage--;
-            m_FormState.satIndex = 0;
             _DrawCurrentImage();
         }
     } else if (uwKey == KEY_RIGHT) {
         m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-        m_FormState.satIndex = 0;
         _DrawCurrentImage();
     }
 }
@@ -267,13 +245,8 @@ static void _OnMessage(GM_MESSAGE* pMsg)
 #if GUI_SUPPORT_TOUCH
     case GM_TOUCH:
         if (pMsg->Param == TOUCH_UP) {
-            // Touch → advance saturation or next image
-            if (m_FormState.satIndex < kSatCount - 1) {
-                m_FormState.satIndex++;
-            } else {
-                m_FormState.satIndex = 0;
-                m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-            }
+            // Touch anywhere → next image
+            m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
             _DrawCurrentImage();
             m_FormState.uNextTick = GUI_GetTime() + 5000;
         }

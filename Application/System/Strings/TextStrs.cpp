@@ -32,7 +32,7 @@ typedef struct tagMultiLangStrings
 //-----------------------------------------------------------------------------
 constexpr TMultiLangStrings listMultiStrings[] =
 {
-   { idDevFuncSUTC,        "智能欠压脱扣控制装置",       "Smart Undervoltage Tirp Controller"}
+   { idDevFuncSUTC,        "智能欠压脱扣控制装置",       "Undervoltage Tirp Controller"}
 //  ,{ idGPDevFamiry,        "智能欠压脱扣控制装置",       "Smart Undervoltage Tirp Controller"}
 
 //// 定值区

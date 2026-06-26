@@ -1,19 +1,21 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GForm.cpp
- Version     : V1.00
+ Version     : V1.01
  By          : Wey. Silver Grid
 
  Description : GForm system implementation.
                Registry, navigation stack, message dispatch, Tick loop.
 
- Date        : 2026.06.24
+ Date        : 2026.06.24 (V1.00 — initial implementation)
+              2026.06.25 (V1.01 — added TouchEvent for touch screen support)
 */
 //-----------------------------------------------------------------------------
 #include "GForm.h"
 #include "GFormPlatform.h"
 #include "GWinTypes.h"
 #include "GUIMessage.h"
+#include "GUI.h"
 
 #include <cstring>
 
@@ -242,7 +244,7 @@ void gform::Tick()
         GM_MESSAGE tickMsg = {};
         tickMsg.MsgId  = GM_TIMER_TICK;
         tickMsg.Param  = 0;
-        tickMsg.Data.v = 0;
+        tickMsg.Data.v = static_cast<int32_t>(GUI_GetTime());
         callbacks->pMsg(&tickMsg);
     }
 }
@@ -568,3 +570,15 @@ void gform::KeyEvent(uint32_t key, uint32_t pressedCnt)
     SendMsg(msgId, static_cast<uint16_t>(key),
                 static_cast<int32_t>(pressedCnt));
 }
+
+//=============================================================================
+// Touch event handling
+//=============================================================================
+#if GUI_SUPPORT_TOUCH
+void gform::TouchEvent(uint16_t action, uint16_t x, uint16_t y)
+{
+    // Pack coordinates: x in upper 16 bits, y in lower 16 bits
+    int32_t packed = (static_cast<int32_t>(x) << 16) | static_cast<int32_t>(y);
+    SendMsg(GM_TOUCH, action, packed);
+}
+#endif

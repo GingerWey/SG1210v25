@@ -1,15 +1,15 @@
-//-----------------------------------------------------------------------------
+ï»¿//-----------------------------------------------------------------------------
 /*
  File        : rtc.c
  Version     : V1.10
- By          : ÒøÍø¿Æ¼¼
+ By          : é“¶ç½‘ç§‘æŠ€
 
  For         : Stm32f4xx
  Mode        : Thumb2
  Toolchain   : 
                  RealView Microcontroller Development Kit (MDK)
                  Keil uVision
- Description :STM32F4ÄÚ²¿RTC·â×°º¯Êı
+ Description :STM32F4å†…éƒ¨RTCå°è£…å‡½æ•°
         
  Date       : 2023.12.05 2017.08.12
 */
@@ -25,28 +25,28 @@
 
 #include <cmsis_os.h>
 //=============================================================================
-// È«¾Öºê
+// å…¨å±€å®
 //-----------------------------------------------------------------------------
-// Ô¤·ÖÆµ
+// é¢„åˆ†é¢‘
 #define PERDIV_A           0x1F
 #define PERDIV_S           0x3FF
 //-----------------------------------------------------------------------------
-// Back¼Ä´æÆ÷·ÖÅä
+// Backå¯„å­˜å™¨åˆ†é…
 //-----------------------------------------------------------------------------
-// RTCÅäÖÃ±ê¼Ç
+// RTCé…ç½®æ ‡è®°
 #define BKGREG_RTCCFG      RTC->BKP0R
 
 #define RTC_CONFIGED       0xAC6EE635
 //-----------------------------------------------------------------------------
-// ¿ØÖÆÆ÷¶¯×÷µÄÆô¶¯Ê±¿Ì
-#define NUM_CONTROLLOR_STATES   8           // ¿ØÖÆÆ÷×´Ì¬Êı¾İÊıÁ¿
-#define CONTROLLOR_STATE_INDEX  (0x50 + 2 * sizeof(uint32_t))  // ±£´æ¿ØÖÆÆ÷×´Ì¬Êı¾İµÄÆğÊ¼µØÖ·
+// æ§åˆ¶å™¨åŠ¨ä½œçš„å¯åŠ¨æ—¶åˆ»
+#define NUM_CONTROLLOR_STATES   8           // æ§åˆ¶å™¨çŠ¶æ€æ•°æ®æ•°é‡
+#define CONTROLLOR_STATE_INDEX  (0x50 + 2 * sizeof(uint32_t))  // ä¿å­˜æ§åˆ¶å™¨çŠ¶æ€æ•°æ®çš„èµ·å§‹åœ°å€
 //-----------------------------------------------------------------------------
-// ³ÖĞø×´Ì¬
+// æŒç»­çŠ¶æ€
 #define BKGREG_PERSIS1     RTC->BKP15R 
 #define BKGREG_PERSIS2     RTC->BKP16R 
 //-----------------------------------------------------------------------------
-// IAPÓĞĞ§±ê¼Ç
+// IAPæœ‰æ•ˆæ ‡è®°
 #define BKGREG_IAP1        RTC->BKP17R
 #define BKGREG_IAP2        RTC->BKP18R
 #define BKGREG_IAP3        RTC->BKP19R
@@ -54,15 +54,15 @@
 #define IAP_ENABLED_TOKEN  (uint32_t)0xC8D9C6BD
 #define IAP_ENABLED_CHECK  (uint32_t)(IAP_ENABLED_TOKEN ^ IAP_ENABLED_SIGN)
 //=============================================================================
-// È«¾ÖÊı¾İ
+// å…¨å±€æ•°æ®
 //-----------------------------------------------------------------------------
 RTC_HandleTypeDef hrtc;
 
 //static uint32_t   FuMillisecond;
 //=============================================================================
-// ¾Ö²¿·½·¨
+// å±€éƒ¨æ–¹æ³•
 //-----------------------------------------------------------------------------
-// HAL_RCC_OscConfigÖĞLSIÆô¶¯Ê±¼ä½Ï³¤£¬Ôì³É¿´ÃÅ¹·Æô¶¯ 
+// HAL_RCC_OscConfigä¸­LSIå¯åŠ¨æ—¶é—´è¾ƒé•¿ï¼Œé€ æˆçœ‹é—¨ç‹—å¯åŠ¨ 
 HAL_StatusTypeDef RTC_LSI_OscConfig(RCC_OscInitTypeDef  *RCC_OscInitStruct)
 {
   
@@ -127,7 +127,7 @@ static HAL_StatusTypeDef _SetDateTime( const TDateTimeType *sTime)
   RTC_DateTypeDef  Date;
   RTC_TimeTypeDef  Time;
   
-//  // ·¢ËÍ¡°ĞŞ¸ÄÏµÍ³Ê±ÖÓ¡±ÊÂ¼ş
+//  // å‘é€â€œä¿®æ”¹ç³»ç»Ÿæ—¶é’Ÿâ€äº‹ä»¶
 //  EVTMGR_AppendEvent( REG_EO_SET_RTC, STATE_TRUE );
 
   assert_param( sTime );
@@ -211,7 +211,7 @@ static HAL_StatusTypeDef _GetDateTime( TDateTimeType *sTime)
   return iRes;
 }
 //=============================================================================
-// È«¾Ö·½·¨
+// å…¨å±€æ–¹æ³•
 //-----------------------------------------------------------------------------
 // RTC init function
 void MX_RTC_Init(void)
@@ -244,14 +244,14 @@ void MX_RTC_Init(void)
       int iTryCntr = 2;
       while( iTryCntr-- > 0 )
         {
-        // ¶Á¸÷¾§Õñ×´Ì¬
+        // è¯»å„æ™¶æŒ¯çŠ¶æ€
         RCC_OscInitTypeDef     RCC_OscInitStruct;
         HAL_RCC_GetOscConfig( &RCC_OscInitStruct );
   
-        // LSEÓĞĞ§£¿
+        // LSEæœ‰æ•ˆï¼Ÿ
         if( RCC_LSE_ON == RCC_OscInitStruct.LSEState )
           {
-          // LSEÓĞĞ§£¬ÓÃLSE
+          // LSEæœ‰æ•ˆï¼Œç”¨LSE
           RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
           PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
           PeriphClkInitStruct.RTCClockSelection    = RCC_RTCCLKSOURCE_LSE;
@@ -267,7 +267,7 @@ void MX_RTC_Init(void)
           }
         else
           {
-          // Æô¶¯LSE
+          // å¯åŠ¨LSE
           RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE;
           RCC_OscInitStruct.LSEState = RCC_LSE_ON;
           if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -280,12 +280,12 @@ void MX_RTC_Init(void)
             iTryCntr++;
             }
             
-          // ¼´Ê¹LSEÆô¶¯³É¹¦£¬Ò²ĞèÒª»ØÈ¥ÅäÖÃRTCµÄÊ±ÖÓÔ´ÎªLSE
+          // å³ä½¿LSEå¯åŠ¨æˆåŠŸï¼Œä¹Ÿéœ€è¦å›å»é…ç½®RTCçš„æ—¶é’Ÿæºä¸ºLSE
           if( iTryCntr > 1 )
             continue;
 
-//          // Æô¶¯LSEÊ§°Ü
-//          // ³¢ÊÔÆô¶¯LSI
+//          // å¯åŠ¨LSEå¤±è´¥
+//          // å°è¯•å¯åŠ¨LSI
 //          RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI;
 //          RCC_OscInitStruct.LSIState       = RCC_LSI_ON;
 
@@ -317,7 +317,7 @@ void MX_RTC_Init(void)
       bConfiged = 0xAA;
 
     if( 0xAA == bConfiged )
-      // ÖÃ¡°RTCÒÑÆô¶¯¡±±êÖ¾
+      // ç½®â€œRTCå·²å¯åŠ¨â€æ ‡å¿—
       BKGREG_RTCCFG = RTC_CONFIGED;
     }
   
@@ -335,31 +335,31 @@ void MX_RTC_Init(void)
     EVTMGR_AppendEvent( REG_EH_RTC_FAULT, EVENT_TRUE );
     }
 
-  // ¸üĞÂ ms¼ÆÊı
+  // æ›´æ–° msè®¡æ•°
 //  FuMillisecond = RTC->SSR;
 
-  // ½ûÖ¹AF1£¬ÊÍ·ÅPC13
+  // ç¦æ­¢AF1ï¼Œé‡Šæ”¾PC13
   HAL_RTCEx_DeactivateCalibrationOutPut( &hrtc );
   HAL_RTCEx_DeactivateTamper( &hrtc, RTC_TAFCR_TAMP1E | RTC_TAFCR_TAMP2E );
     
-  //---------- ³õÊ¼»¯Íâ²¿RTC
+  //---------- åˆå§‹åŒ–å¤–éƒ¨RTC
   if( 0 < u3077Ok )
     {
-    // Íâ²¿RTC¿É·ÃÎÊ
+    // å¤–éƒ¨RTCå¯è®¿é—®
     uint32_t uSt3077;
     int iRes = SD3077_ReadState( &uSt3077 );
     if( 0 == iRes )
       {
 #ifdef SetRTCStReg
-      SetRTCStReg( uSt3077 ); // ±£´æExRTCµÄ×´Ì¬
+      SetRTCStReg( uSt3077 ); // ä¿å­˜ExRTCçš„çŠ¶æ€
 #endif
       if( 0 != (uSt3077 & (SD3077_STATE_RTCF | SD3077_STATE_OSF) ) )
         {
-        // Íâ²¿RTCµÄÊ±¼ä²»¿ÉĞÅ
+        // å¤–éƒ¨RTCçš„æ—¶é—´ä¸å¯ä¿¡
         TDateTimeType dtTime;
         if( HAL_OK == _GetDateTime( &dtTime ) )
           {
-          // ÓÃÄÚ²¿Ê±¼äĞ£Íâ²¿Ê±ÖÓ
+          // ç”¨å†…éƒ¨æ—¶é—´æ ¡å¤–éƒ¨æ—¶é’Ÿ
           if( 0 == SD3077_SetDateTime( &dtTime ) )
             ClrHWFault( RHF_ExRTC_ERR );
           }
@@ -377,7 +377,7 @@ void MX_RTC_Init(void)
           }
         else if( HAL_OK == _GetDateTime( &dtTime ) )
           {
-          // ÓÃÄÚ²¿Ê±¼äĞ£Íâ²¿Ê±ÖÓ
+          // ç”¨å†…éƒ¨æ—¶é—´æ ¡å¤–éƒ¨æ—¶é’Ÿ
           if( 0 == SD3077_SetDateTime( &dtTime ) )
             ClrHWFault( RHF_ExRTC_ERR );
           }
@@ -421,7 +421,7 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
 int RTC_SetTime( const TDateTimeType *sTime)
 {
 
-  // ÉèÖÃÄÚ²¿RTC
+  // è®¾ç½®å†…éƒ¨RTC
   int iRes = HAL_OK;
   if( HAL_OK != _SetDateTime( sTime ) )
     iRes = HAL_ERROR;
@@ -465,7 +465,7 @@ int RTC_GetTime( TDateTimeType *sTime)
   return iRes;
 }
 //-----------------------------------------------------------------------------
-// ÓÃExRTCÍ¬²½Æ¬ÄÚÊ±¼ä
+// ç”¨ExRTCåŒæ­¥ç‰‡å†…æ—¶é—´
 int RTC_ExRTCSync()
 {
 
@@ -485,7 +485,7 @@ int RTC_ExRTCSync()
   return iRes;
 }
 //-----------------------------------------------------------------------------
-// ÌîĞ´ÊÂ¼şÊ±¼ä
+// å¡«å†™äº‹ä»¶æ—¶é—´
 void RTC_FillEventTime( TEventLogSummary *pEvtLog )
 {
 
@@ -503,7 +503,7 @@ void RTC_FillEventTime( TEventLogSummary *pEvtLog )
     }
 }
 //-----------------------------------------------------------------------------
-//// ºÁÃë¼ÆÊı
+//// æ¯«ç§’è®¡æ•°
 //void RTC_msTick(void)
 //{
 
@@ -512,7 +512,7 @@ void RTC_FillEventTime( TEventLogSummary *pEvtLog )
 //    FuMillisecond = 0;
 //}
 //------------------------------------------------------------------------------
-// È¡ÏµÍ³ºÁÃëTick
+// å–ç³»ç»Ÿæ¯«ç§’Tick
 uint32_t RTC_GetSysMsTick(void)
 {
   
@@ -520,9 +520,9 @@ uint32_t RTC_GetSysMsTick(void)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-// IAPÏà¹Ø
+// IAPç›¸å…³
 //------------------------------------------------------------------------------
-// ¶ÁIAP±êÊ¶
+// è¯»IAPæ ‡è¯†
 uint32_t RTC_ReadIAPIDReg(void)
 {
 
@@ -540,7 +540,7 @@ uint32_t RTC_ReadIAPIDReg(void)
   return 0;  
 }
 //------------------------------------------------------------------------------
-// Ğ´IAP±êÊ¶
+// å†™IAPæ ‡è¯†
 uint32_t RTC_MarkIAPIDReg(uint32_t uToken)
 {
 
@@ -566,13 +566,13 @@ uint32_t RTC_MarkIAPIDReg(uint32_t uToken)
 }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-// ¿ØÖÆÆ÷×´Ì¬±£´æ
+// æ§åˆ¶å™¨çŠ¶æ€ä¿å­˜
 //-----------------------------------------------------------------------------
-// ¶Á»Ø±£´æµÄ¿ØÖÆÆ÷×´Ì¬
-// ÊäÈë:
-//   uIndex£ºÊı¾İµÄÎ»ÖÃË÷Òı
-// ·µ»Ø£º
-//   ´ô´æµÄ×´Ì¬Êı¾İÖµ
+// è¯»å›ä¿å­˜çš„æ§åˆ¶å™¨çŠ¶æ€
+// è¾“å…¥:
+//   uIndexï¼šæ•°æ®çš„ä½ç½®ç´¢å¼•
+// è¿”å›ï¼š
+//   å‘†å­˜çš„çŠ¶æ€æ•°æ®å€¼
 uint32_t RTC_ReadCtrlState(uint32_t uIndex)
 {
   
@@ -585,11 +585,11 @@ uint32_t RTC_ReadCtrlState(uint32_t uIndex)
   return uRes;
 }
 //-----------------------------------------------------------------------------
-// Ğ´Èë¿ØÖÆÆ÷×´Ì¬Êı¾İ
-// ÊäÈë:
-//   uIndex£ºÊı¾İµÄÎ»ÖÃË÷Òı
-// ·µ»Ø£º
-//   0: ³É¹¦  else Ê§°Ü
+// å†™å…¥æ§åˆ¶å™¨çŠ¶æ€æ•°æ®
+// è¾“å…¥:
+//   uIndexï¼šæ•°æ®çš„ä½ç½®ç´¢å¼•
+// è¿”å›ï¼š
+//   0: æˆåŠŸ  else å¤±è´¥
 int RTC_WriteCtrlState(uint32_t uIndex, uint32_t uData)
 {
 
@@ -608,9 +608,9 @@ int RTC_WriteCtrlState(uint32_t uIndex, uint32_t uData)
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-//  ·ÇÒ×Ê§Ïà¹Ø
+//  éæ˜“å¤±ç›¸å…³
 //------------------------------------------------------------------------------
-// ¶ÁBackReg
+// è¯»BackReg
 uint32_t RTC_ReadBKReg(uint32_t uReg)
 {
 
@@ -627,7 +627,7 @@ uint32_t RTC_ReadBKReg(uint32_t uReg)
   return uResult;
 }
 //------------------------------------------------------------------------------
-// Ğ´BackReg
+// å†™BackReg
 void RTC_WriteBkReg(uint32_t uReg, uint32_t uValue)
 {
 

@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GForm.h
- Version     : V1.00
+ Version     : V1.01
  By          : Wey. Silver Grid
 
  Description : GForm — Unified GUI Form management system.
@@ -21,7 +21,8 @@
                  4. Navigate via gform::PushForm / ReplaceForm / PopForm.
                  5. Send messages via gform::SendMessage / KeyEvent.
 
- Date        : 2026.06.24
+ Date        : 2026.06.24 (V1.00 — initial GForm system)
+              2026.06.25 (V1.01 — added TouchEvent API for touch screen)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_GFORM_H
@@ -55,6 +56,13 @@ constexpr uint16_t kFormIdInvalid = 0xFFFF;
   constexpr uint16_t WID_UARTConfigForm = 105;
   constexpr uint16_t WID_DevInfoForm    = 106;
   constexpr uint16_t WID_MessageForm    = 107;
+  constexpr uint16_t WID_ConfigForm     = 108;
+  constexpr uint16_t WID_GuageForm      = 109;
+  constexpr uint16_t WID_FatalForm      = 110;
+  constexpr uint16_t WID_LoginDialog    = 111;
+  constexpr uint16_t WID_TimeDialog     = 112;
+  constexpr uint16_t WID_WLGListForm    = 113;
+  constexpr uint16_t WID_WLGViewForm    = 114;
 #endif
 
 //=============================================================================
@@ -189,6 +197,13 @@ void BroadcastMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);
 
 /// Handle a key event (translate raw key + press count to GM_KEYDOWN/UP/PRESS).
 void KeyEvent(uint32_t key, uint32_t pressedCnt);
+
+/// Handle a touch event (translate action + coordinates to GM_TOUCH).
+/// Only active when GUI_SUPPORT_TOUCH is enabled in GUIConf.h.
+/// @param action  TOUCH_DOWN, TOUCH_MOVE, or TOUCH_UP
+/// @param x       X coordinate (display pixels)
+/// @param y       Y coordinate (display pixels)
+void TouchEvent(uint16_t action, uint16_t x, uint16_t y);
 
 }  // namespace gform
 
