@@ -1,10 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Compression base interface
-// ---------------------------------------------------------------------------
-// CompressionBase.h — Abstract interface for all compression codecs
-//                      (RLE, Huffman, MiniLZ77, DEFLATE).
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CompressionBase.h
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : Abstract interface for all CSG compression codecs
+               (RLE, Huffman, MiniLZ77, DEFLATE).
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_COMPRESS_COMPRESSIONBASE_H_
 #define TOOLKITS_INCLUDE_COMPRESS_COMPRESSIONBASE_H_
 

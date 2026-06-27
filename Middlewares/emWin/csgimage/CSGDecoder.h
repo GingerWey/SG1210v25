@@ -1,15 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Decoder
-// ---------------------------------------------------------------------------
-// CSGDecoder.h — Full decoder pipeline:
-//                1. Parse CSG binary file / byte buffer
-//                2. Validate headers, CRCs, offsets
-//                3. Decompress picture data (streaming or one-shot)
-//                4. Convert to RGBA pixels with transparency handling
-//
-//                Designed for both PC and MCU (STM32F4/F7) use.
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGDecoder.h
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : CSG decoder class — DecompressData, ConvertToRGBA, DecodePicture,
+               DecodeAtlasPicture, DecodeAtlas.  PC-side full-decode API.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 decoder header)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_CSGDECODER_H_
 #define TOOLKITS_INCLUDE_CSGDECODER_H_
 

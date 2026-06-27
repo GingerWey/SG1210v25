@@ -1,13 +1,17 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — RLE compression codec implementation
-// ---------------------------------------------------------------------------
-// Frame types:
-//   ZRC (00) — Transparent run,         N = high 6 bits (1..63)
-//   DPS (01) — Discrete pixels,         N = high 6 bits (0..63), N+1 pixels
-//   CPS (10) — Short continuous run,    N = high 6 bits (0..63), N+1 repeats
-//   CPL (11) — Long continuous run,     N = 14 bits    (0..16383), N+1 repeats
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : RLE.cpp
+ Version     : V1.51
+ By          : Wey. Silver Grid
 
+ Description : RLE codec implementation — ZRC/DPS/CPS/CPL encode/decode,
+               DPS cross-batch pending, streaming decoder support.
+
+ Date        : 2026.06.26 (V1.51 — DPS cross-batch pending in streaming decoder)
+              2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #include "Compress/RLE.h"
 #include <cstring>
 #include <algorithm>

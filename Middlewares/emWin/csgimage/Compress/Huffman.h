@@ -1,15 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Static Huffman entropy codec
-// ---------------------------------------------------------------------------
-// Huffman.h — Dynamically-generated static Huffman encoder / decoder.
-//             Code lengths are generated per CAL from the spec §5.7.4
-//             algorithm; canonical codewords assigned per §5.7.5.
-//
-//             Two operating modes:
-//               Pure Huffman  (256 symbols, pixel bytes 0..255)
-//               DEFLATE lit/len (286 symbols) + distance (32 symbols)
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : Huffman.h
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : Static Huffman entropy codec — self-describing header, canonical
+               codewords per CSG spec §5.7.4–§5.7.5.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_COMPRESS_HUFFMAN_H_
 #define TOOLKITS_INCLUDE_COMPRESS_HUFFMAN_H_
 

@@ -20,15 +20,18 @@
 extern "C" {
 #endif
 
+// ------------------------------------------------------------
+// CSG Image: picbkg320x240Rcsg RLE
+extern const TGUIPicture picbkg320x240Rcsg;
 
-//===============================================================
-// picBkgrd320x240jpg indexer
-extern const TGUIPicture picBkgrd320x240jpg;
+// ------------------------------------------------------------
+// CSG Image: picbkg320x240csg LZ77
+extern const TGUIPicture picbkg320x240Lcsg;
 
 //===============================================================
 // ------------------------------------------------------------
 /*
-   CSG Image: picImageRescsg
+   CSG atlas: picImageRescsg
       No. Image                 resolution     size  CRM       CRN  CAS          Size  ratio
     -------------------------------------------------------------------------------------------
       1.  MA_Logo78x18.png         78x19       2139  RGB565     4  MiniLZ77       488   22.81%

@@ -1,11 +1,15 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — BitPacker
-// ---------------------------------------------------------------------------
-// BitPacker.h — LSB-first bit-stream packer / unpacker.
-//               Packs integer values into a growing byte buffer using
-//               Little-Endian bit order (bit 0 first).
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : BitPacker.h
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : LSB-first bit-stream packer / unpacker for CSG CRI index coding.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_BITPACKER_H_
 #define TOOLKITS_INCLUDE_BITPACKER_H_
 

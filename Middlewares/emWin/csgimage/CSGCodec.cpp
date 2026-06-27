@@ -1,7 +1,17 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Core Codec implementation
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGCodec.cpp
+ Version     : V1.51
+ By          : Wey. Silver Grid
 
+ Description : CSG codec factory — encode/decode single pictures and atlases,
+               CRC16 validation, header serialization, palette handling.
+
+ Date        : 2026.06.26 (V1.51 — encoder header.size overflow guard: totalSize > kCsgMaxSinglePic)
+              2026.06.25 (V1.50 — original CSG v1.5 codec)
+*/
+//-----------------------------------------------------------------------------
 #include "CSGCodec.h"
 #include "Compress/RLE.h"
 #include "Compress/Huffman.h"
@@ -137,6 +147,9 @@ static bool EncodeSinglePicture(CSGPictureEncodeData& pic) {
     // Picture size = dpos + compressed_data_size (aligned to 4)
     uint32_t totalSize = dpos + Align4(static_cast<uint32_t>(
         pic.compressedData.size()));
+    if (totalSize > kCsgMaxSinglePic) {
+        return false;  // Image too large for CSG format (size field is uint16_t)
+    }
     header.size = static_cast<uint16_t>(totalSize);
 
     // ---- Step 4: Serialize picture ----

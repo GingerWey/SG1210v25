@@ -1,10 +1,20 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Compact Scalable Graphic Image Toolkit
-// ---------------------------------------------------------------------------
-// CSGCommon.h — Core types, enumerations, constants, CRC16, Huffman tables,
-//               decoder state, and shared utility functions for CSG format.
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGCommon.h
+ Version     : V1.52
+ By          : Wey. Silver Grid
 
+ Description : CSG core types, enumerations, constants, CRC16, Huffman tables,
+               decoder state, color packing/unpacking, VxARGB with CRM+saturation.
+
+ Date        : 2026.06.26 (V1.52 — VxARGB: FromCrm/ToCrm/ApplySaturation/IsTransparent)
+              2026.06.26 (V1.51 — kCsgMaxWidth=500/kCsgMaxHeight=360, CSGDecoderState:
+                          pendMatchLen/pendRef, pendRleCount/Type/Cri, deflateBufHandle,
+                          streamSize, CSG_DEC_WINDOW_BYTES=8192)
+              2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_CSGCOMMON_H_
 #define TOOLKITS_INCLUDE_CSGCOMMON_H_
 
@@ -83,10 +93,10 @@ inline constexpr uint8_t kCsgCurVersion   = (kCsgVersionMajor * 10
 // Dimensional limits
 // ============================================================================
 
-inline constexpr int kCsgMaxWidth       = 256;
-inline constexpr int kCsgMaxHeight      = 256;
+inline constexpr int kCsgMaxWidth       = 500;
+inline constexpr int kCsgMaxHeight      = 360;
 inline constexpr int kCsgMaxPicCount    = 100;    // Max pictures per atlas
-inline constexpr int kCsgMaxSinglePic   = 65500;  // Max encoded bytes per picture
+inline constexpr int kCsgMaxSinglePic   = 65500;  // Max encoded bytes per picture (uint16_t)
 inline constexpr int kCsgMaxPicOffset   = 65535;  // Max offset value (uint16_t)
 inline constexpr int kCsgAlignBytes     = 4;      // Mandatory 4-byte alignment
 
@@ -232,6 +242,26 @@ struct VxARGB {
     bool operator!=(const VxARGB& o) const noexcept {
         return !(*this == o);
     }
+
+    // ---- Transparency ----
+    bool IsTransparent() const noexcept { return a == 0; }
+
+    // ---- Saturation: ITU-R BT.601 luma-based desaturation (in-place) ----
+    // sat: 0–100 (100 = no change, 0 = grayscale)
+    void ApplySaturation(int sat) noexcept {
+        if (sat >= 100 || sat < 0) return;
+        int gray  = (static_cast<int>(r) * 299 +
+                     static_cast<int>(g) * 587 +
+                     static_cast<int>(b) * 114) / 1000;
+        int factor = sat * 10;  // 0..1000
+        r = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(r) * factor) / 1000);
+        g = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(g) * factor) / 1000);
+        b = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(b) * factor) / 1000);
+    }
+
+    // ---- CRM ↔ VxARGB conversion (defined after PackColor/UnpackColor) ----
+    static VxARGB FromCrm(const uint8_t* crm, ColorMode cm) noexcept;
+    void ToCrm(uint8_t* out, ColorMode cm) const noexcept;
 };
 
 // ============================================================================
@@ -714,6 +744,16 @@ inline VxARGB UnpackColor(const uint8_t* in, ColorMode cm) noexcept {
         default:
             return VxARGB();
     }
+}
+
+// ---- VxARGB CRM conversion (inline after PackColor/UnpackColor) ----
+
+inline VxARGB VxARGB::FromCrm(const uint8_t* crm, ColorMode cm) noexcept {
+    return UnpackColor(crm, cm);
+}
+
+inline void VxARGB::ToCrm(uint8_t* out, ColorMode cm) const noexcept {
+    PackColor(*this, cm, out);
 }
 
 // ============================================================================

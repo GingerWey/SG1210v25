@@ -1,11 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Compact Scalable Graphic Image Toolkit
-// ---------------------------------------------------------------------------
-// CSGCommon.cpp — Implementation of CRC16, string helpers, file I/O,
-//                 Huffman code-length generation, code assignment, and
-//                 decode-table construction.
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGCommon.cpp
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : CRC16, string helpers, file I/O, Huffman code-length generation,
+               code assignment, and decode-table builder implementations.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #include "CSGCommon.h"
 
 // ============================================================================

@@ -1,7 +1,15 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — BitPacker implementation
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : BitPacker.cpp
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : BitPacker implementation — LSB-first bit-stream pack/unpack.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #include "BitPacker.h"
 
 // ============================================================================

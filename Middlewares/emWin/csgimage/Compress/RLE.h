@@ -1,11 +1,17 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — RLE compression codec
-// ---------------------------------------------------------------------------
-// RLE.h — Run-Length Encoding compressor / decompressor.
-//         Frame types: ZRC(00), DPS(01), CPS(10), CPL(11).
-//         Ref: 1_CSG文件格式v1.32.md §4.2
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : RLE.h
+ Version     : V1.51
+ By          : Wey. Silver Grid
 
+ Description : RLE compression codec (ZRC/DPS/CPS/CPL frame types).
+               Ref: 1_CSG文件格式v1.32.md §4.2
+
+ Date        : 2026.06.26 (V1.51 — DPS cross-batch pending support)
+              2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_COMPRESS_RLE_H_
 #define TOOLKITS_INCLUDE_COMPRESS_RLE_H_
 

@@ -1,15 +1,19 @@
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.cpp
- Version     : V1.01
+ Version     : V1.04
  By          : Wey. Silver Grid
 
- Description : CSG image drawing -- MCU-safe implementation.
-               Follows the LCDX_Bitmap_Draw pattern with dual MCU / simulator
-               drawing paths.  Uses streaming decoder (zero heap vectors).
+ Description : CSG image drawing — unified Sim+MCU streaming path.
+               Row-batch bitmap output: GUI_DrawBitmapExp (Sim) / FSMC burst (MCU).
+               Fast inline CrmToRgb565 + SaturateRgb565 hot path.
 
- Date        : 2026.06.24 (V1.00 — initial implementation)
+ Date        : 2026.06.26 (V1.04 — performance: row-bitmap draw, inline CRM→RGB565)
+              2026.06.26 (V1.03 — VxARGB: FromCrm/ToCrm/ApplySaturation refactoring)
+              2026.06.26 (V1.02 — unified streaming path, CRM output, CAS 0/1/2/3)
               2026.06.25 (V1.01 — saturation helpers, atlas sub-picture, picIndex param)
+              2026.06.24 (V1.00 — initial CSG drawing API)
 */
 //-----------------------------------------------------------------------------
 #include "CSGDraw.h"
@@ -133,121 +137,23 @@ static inline void DrawPixel(int x, int y,
 #endif
 }
 
-//-----------------------------------------------------------------------------
-/// Convert CRM-encoded source pixel to RGBA, applying optional palette override.
-/// src: pointer to CRM-encoded pixel data (src[0..bpc-1])
-/// bpc: bytes per color (2=RGB565, 3=RGB888, 4=RGB8888)
-/// colorMode: the ColorMode enum value
-/// palette: CRM palette bytes, or nullptr for true-color
-/// crn: palette size (0=true-color)
-/// outRed/Green/Blue/Alpha: output
-//-----------------------------------------------------------------------------
-/// Convert a single uncompressed CRM pixel to RGBA.
-/// Caller ensures src >= bpc bytes.
-static void CrmPixelToRgba(const uint8_t* src,
-                           uint8_t colorMode,
-                           uint8_t* outRed, uint8_t* outGreen,
-                           uint8_t* outBlue, uint8_t* outAlpha)
-{
-    // Use bit-extraction formulas matching CSGCommon.h (FromRGB565 etc.)
-    // — identical to full CSGDecoder's ConvertToRGBA output
-    uint8_t r = 0, g = 0, b = 0, a = 255;
-    switch (colorMode) {
-    case 0x21: { // RGB565
-        uint16_t v = src[0] | (src[1] << 8);
-        r = static_cast<uint8_t>((v >> 8) & 0xF8);
-        g = static_cast<uint8_t>((v >> 3) & 0xFC);
-        b = static_cast<uint8_t>((v << 3) & 0xF8);
-        break;
-    }
-    case 0x22: { // BGR565
-        uint16_t v = src[0] | (src[1] << 8);
-        b = static_cast<uint8_t>((v >> 8) & 0xF8);
-        g = static_cast<uint8_t>((v >> 3) & 0xFC);
-        r = static_cast<uint8_t>((v << 3) & 0xF8);
-        break;
-    }
-    case 0x31: // RGB666
-        r = static_cast<uint8_t>((src[0] & 0xFC) | ((src[2] << 2) & 0x03));
-        g = static_cast<uint8_t>(((src[0] & 0x03) << 4) | ((src[1] >> 4) & 0x0F));
-        b = static_cast<uint8_t>(((src[1] & 0x0F) << 2) | ((src[2] >> 6) & 0x03));
-        break;
-    case 0x33: // RGB888
-        r = src[0]; g = src[1]; b = src[2];
-        break;
-    case 0x41: // RGB8888
-        r = src[0]; g = src[1]; b = src[2]; a = src[3];
-        break;
-    default: break;
-    }
-    *outRed = r; *outGreen = g; *outBlue = b; *outAlpha = a;
-}
-
 //=============================================================================
 // Saturation helpers
 //=============================================================================
 
-/// Apply saturation to a single RGBA pixel (in-place).
-/// sat: 0–100 (100 = no change, 0 = grayscale)
-static inline void SaturatePixel(uint8_t* r, uint8_t* g, uint8_t* b, int sat)
-{
-    if (sat >= 100) return;
-    if (sat < 0) sat = 0;
-
-    // ITU-R BT.601 luma
-    int gray = (static_cast<int>(*r) * 299 +
-                static_cast<int>(*g) * 587 +
-                static_cast<int>(*b) * 114) / 1000;
-
-    int factor = sat * 10;  // 0..1000
-    *r = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*r) * factor) / 1000);
-    *g = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*g) * factor) / 1000);
-    *b = static_cast<uint8_t>((gray * (1000 - factor) + static_cast<int>(*b) * factor) / 1000);
-}
-
-/// Apply saturation to a CRM-encoded palette.
-/// palBytes: pointer to palette data, modified in-place.
-/// entryCount: number of palette entries
-/// bpc: bytes per color
-/// colorMode: ColorMode enum value
-/// sat: 0–100
+/// Apply saturation to a CRM-encoded palette (in-place).
+/// Uses VxARGB::FromCrm → ApplySaturation → ToCrm for clean round-trip.
 static void SaturatePalette(uint8_t* palBytes, int entryCount, int bpc,
                             uint8_t colorMode, int sat)
 {
     if (sat >= 100 || palBytes == nullptr || entryCount <= 0) return;
     if (sat < 0) sat = 0;
 
+    ColorMode cm = static_cast<ColorMode>(colorMode);
     for (int i = 0; i < entryCount; ++i) {
-        uint8_t* entry = palBytes + i * bpc;
-        uint8_t r = 0, g = 0, b = 0, a = 0;
-        CrmPixelToRgba(entry, colorMode, &r, &g, &b, &a);
-        SaturatePixel(&r, &g, &b, sat);
-
-        // Pack back to CRM format
-        switch (colorMode) {
-        case 0x21: { // RGB565
-            uint16_t v = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-            entry[0] = static_cast<uint8_t>(v & 0xFF);
-            entry[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
-            break;
-        }
-        case 0x22: { // BGR565
-            uint16_t v = ((b >> 3) << 11) | ((g >> 2) << 5) | (r >> 3);
-            entry[0] = static_cast<uint8_t>(v & 0xFF);
-            entry[1] = static_cast<uint8_t>((v >> 8) & 0xFF);
-            break;
-        }
-        case 0x31: // RGB666
-            entry[0] = r * 63 / 255; entry[1] = g * 63 / 255; entry[2] = b * 63 / 255;
-            break;
-        case 0x33: // RGB888
-            entry[0] = r; entry[1] = g; entry[2] = b;
-            break;
-        case 0x41: // RGB8888
-            entry[0] = r; entry[1] = g; entry[2] = b; entry[3] = a;
-            break;
-        default: break;
-        }
+        VxARGB px = VxARGB::FromCrm(palBytes + i * bpc, cm);
+        px.ApplySaturation(sat);
+        px.ToCrm(palBytes + i * bpc, cm);
     }
 }
 
@@ -255,8 +161,55 @@ static void SaturatePalette(uint8_t* palBytes, int entryCount, int bpc,
 // Unified CSG drawing (streaming decoder, Sim + MCU single path)
 //=============================================================================
 
-/// Batch size in pixels — balance between GUI_ALLOC footprint and call count
-constexpr int kCsgBatchPixels = 128;
+// ---- Fast inline helpers ----
+
+/// CRM → RGB565 for common color modes (hot path, no VxARGB overhead)
+static inline uint16_t CrmToRgb565(const uint8_t* crm, uint8_t colorMode) {
+    switch (colorMode) {
+    case 0x21: // RGB565 — direct copy
+        return static_cast<uint16_t>(crm[0]) | (static_cast<uint16_t>(crm[1]) << 8);
+    case 0x22: { // BGR565 — swap to RGB565
+        uint16_t v = static_cast<uint16_t>(crm[0]) | (static_cast<uint16_t>(crm[1]) << 8);
+        uint8_t b = static_cast<uint8_t>((v >> 8) & 0xF8);
+        uint8_t g = static_cast<uint8_t>((v >> 3) & 0xFC);
+        uint8_t r = static_cast<uint8_t>((v << 3) & 0xF8);
+        return ((uint16_t)(r >> 3) << 11) | ((uint16_t)(g >> 2) << 5) | (uint16_t)(b >> 3);
+    }
+    case 0x33: // RGB888 → RGB565
+        return ((uint16_t)(crm[0] >> 3) << 11) | ((uint16_t)(crm[1] >> 2) << 5) | (uint16_t)(crm[2] >> 3);
+    case 0x41: // RGB8888 → RGB565 (skip transparent)
+        if (crm[3] == 0) return 0xF81F;  // magenta sentinel → skip
+        return ((uint16_t)(crm[0] >> 3) << 11) | ((uint16_t)(crm[1] >> 2) << 5) | (uint16_t)(crm[2] >> 3);
+    default: {
+        VxARGB px = VxARGB::FromCrm(crm, static_cast<ColorMode>(colorMode));
+        return ((uint16_t)(px.r >> 3) << 11) | ((uint16_t)(px.g >> 2) << 5) | (uint16_t)(px.b >> 3);
+    }
+    }
+}
+
+/// RGB565 → Sim 32-bit GUI_COLOR (GUICC_M8888I: 0x00RRGGBB)
+static inline uint32_t Rgb565ToSim(uint16_t v) {
+    uint32_t r = (v >> 8) & 0xF8;
+    uint32_t g = (v >> 3) & 0xFC;
+    uint32_t b = (v << 3) & 0xF8;
+    return (r << 16) | (g << 8) | b;  // 0x00RRGGBB
+}
+
+/// Saturate a single RGB565 pixel (in-place) for CRN=0 true-color path
+static inline uint16_t SaturateRgb565(uint16_t v, int sat) {
+    int r = (v >> 11) & 0x1F;
+    int g = (v >> 5) & 0x3F;
+    int b = v & 0x1F;
+    r = (r << 3) | (r >> 2);
+    g = (g << 2) | (g >> 4);
+    b = (b << 3) | (b >> 2);
+    int gray = (r * 299 + g * 587 + b * 114) / 1000;
+    int factor = sat * 10;
+    r = (gray * (1000 - factor) + r * factor) / 1000;
+    g = (gray * (1000 - factor) + g * factor) / 1000;
+    b = (gray * (1000 - factor) + b * factor) / 1000;
+    return ((uint16_t)(r >> 3) << 11) | ((uint16_t)(g >> 2) << 5) | (uint16_t)(b >> 3);
+}
 
 void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
                      int picIndex, int saturation)
@@ -278,10 +231,12 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
                          &pic, &compData, &compSize))
         return;
 
-    int bpc = pic.BytesPerColor();
-    int crn = pic.crn;
+    int bpc    = pic.BytesPerColor();
+    int crn    = pic.crn;
     int totalPixels = pic.width * pic.height;
+    int width  = pic.width;
     ColorMode outMode = static_cast<ColorMode>(pic.colorMode);
+    uint8_t colorMode = pic.colorMode;
 
     // 2. Read embedded palette
     const uint8_t* embPalette = nullptr;
@@ -294,73 +249,122 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
     uint8_t* satPalBuf = nullptr;
     GUI_HMEM hPalBuf = 0;
     const uint8_t* activePalette = embPalette;
-    if (saturation != 100 && embPalette != nullptr && crn > 0) {
+    const bool doSat = (saturation != 100);
+    if (doSat && embPalette != nullptr && crn > 0) {
         int palBytes = crn * bpc;
         hPalBuf = GUI_ALLOC_AllocZero(palBytes);
         if (hPalBuf != 0) {
             satPalBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hPalBuf));
             memcpy(satPalBuf, embPalette, palBytes);
-            SaturatePalette(satPalBuf, crn, bpc, pic.colorMode, saturation);
+            SaturatePalette(satPalBuf, crn, bpc, colorMode, saturation);
             activePalette = satPalBuf;
         }
     }
 
-    // 4. Allocate CRM output buffer — one row (minimal)
-    int maxBatch = pic.width;
+    // 4. Precompute transparent color in RGB565 (palette[0] → RGB565)
+    uint16_t transpRgb565 = 0x0000;
+    bool hasTransparency = false;
+    if (crn > 0 && activePalette != nullptr) {
+        transpRgb565 = CrmToRgb565(activePalette, colorMode);
+        hasTransparency = true;
+    }
+
+    // 5. Allocate buffers: CRM output + bitmap (RGB565 for MCU, 32-bit for Sim)
+    int maxBatch = width;
     if (maxBatch > totalPixels) maxBatch = totalPixels;
-    int bufBytes = maxBatch * bpc;
-    GUI_HMEM hOutBuf = GUI_ALLOC_AllocZero(bufBytes);
-    if (hOutBuf == 0) {
+    int crmBytes = maxBatch * bpc;
+#ifdef __vmSIMULATOR__
+    int bmpBytes = maxBatch * 4;  // 32-bit 0x00RRGGBB for GUICC_M8888I
+#else
+    int bmpBytes = maxBatch * 2;  // RGB565 for ST7789S
+#endif
+    GUI_HMEM hOutBuf = GUI_ALLOC_AllocZero(crmBytes);
+    GUI_HMEM hBmpBuf = GUI_ALLOC_AllocZero(bmpBytes);
+    if (hOutBuf == 0 || hBmpBuf == 0) {
+        if (hOutBuf != 0) GUI_ALLOC_Free(hOutBuf);
+        if (hBmpBuf != 0) GUI_ALLOC_Free(hBmpBuf);
         if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
         return;
     }
     uint8_t* outBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hOutBuf));
+    void*    bmpBuf = GUI_ALLOC_h2p(hBmpBuf);
 
-    // 5. Init streaming decoder (unified Sim+MCU path, CAS 0/1/2/3)
+    // 6. Init streaming decoder
     CSGDecoderState state;
     if (CsgDecodeInit(&state, &pic, outBuf, activePalette, outMode)
         != CSG_ErrCode::kOk) {
-        GUI_ALLOC_Free(hOutBuf);
+        GUI_ALLOC_Free(hOutBuf); GUI_ALLOC_Free(hBmpBuf);
         if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
         return;
     }
     state.stream     = compData + (pic.dpos - kCsgPictureHeaderSize);
     state.streamSize = compSize - (pic.dpos - kCsgPictureHeaderSize);
 
-    int width = pic.width;
+    // 7. Decode + draw loop — row-at-a-time via bitmap
+    int row = 0;
     while (state.pixelsDecoded < totalPixels) {
         int prevDecoded = state.pixelsDecoded;
         CSG_ErrCode decErr = CsgDecodePixels(&state, outBuf, maxBatch);
         int n = state.pixelsDecoded - prevDecoded;
-        if (decErr != CSG_ErrCode::kOk || n == 0) break;  // error or stall
-        for (int i = 0; i < n; ++i) {
-            int pxIdx = prevDecoded + i;
-            int row   = pxIdx / width;
-            int col   = pxIdx % width;
-            const uint8_t* crm = outBuf + i * bpc;
+        if (decErr != CSG_ErrCode::kOk || n == 0) break;
 
-            // Transparency: CRN>0 → CRI=0 maps to palette[0], skip
-            if (crn > 0 && activePalette != nullptr) {
-                bool isTransp = true;
-                for (int k = 0; k < bpc; ++k) {
-                    if (crm[k] != activePalette[k]) { isTransp = false; break; }
-                }
-                if (isTransp) continue;
+#ifdef __vmSIMULATOR__
+        // ---- Sim: CRM → 32-bit 0x00RRGGBB bitmap (GUICC_M8888I format) ----
+        uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
+        if (hasTransparency) {
+            uint32_t transp32 = Rgb565ToSim(transpRgb565);
+            for (int i = 0; i < n; ++i) {
+                uint32_t c = Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode));
+                bmp32[i] = (c == transp32) ? 0x00000000 : c;
             }
-
-            uint8_t red, green, blue, alpha;
-            CrmPixelToRgba(crm, pic.colorMode, &red, &green, &blue, &alpha);
-            if (saturation != 100 && crn == 0)
-                SaturatePixel(&red, &green, &blue, saturation);
-            DrawPixel(x0 + col, y0 + row, red, green, blue, alpha);
+        } else if (doSat && crn == 0) {
+            for (int i = 0; i < n; ++i) {
+                bmp32[i] = Rgb565ToSim(SaturateRgb565(
+                    CrmToRgb565(outBuf + i * bpc, colorMode), saturation));
+            }
+        } else {
+            for (int i = 0; i < n; ++i) {
+                bmp32[i] = Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode));
+            }
         }
+        GUI_DrawBitmapExp(x0, y0 + row, n, 1, 1, 1,
+                          32, n * 4,
+                          static_cast<const U8*>(bmpBuf), nullptr);
+#else
+        // ---- MCU: CRM → RGB565 bitmap ----
+        uint16_t* bmp16 = static_cast<uint16_t*>(bmpBuf);
+        if (hasTransparency) {
+            for (int i = 0; i < n; ++i) {
+                const uint8_t* crm = outBuf + i * bpc;
+                uint16_t v = CrmToRgb565(crm, colorMode);
+                bmp16[i] = (v == transpRgb565) ? 0x0000 : v;
+            }
+        } else if (doSat && crn == 0) {
+            for (int i = 0; i < n; ++i) {
+                bmp16[i] = SaturateRgb565(CrmToRgb565(outBuf + i * bpc, colorMode), saturation);
+            }
+        } else {
+            for (int i = 0; i < n; ++i) {
+                bmp16[i] = CrmToRgb565(outBuf + i * bpc, colorMode);
+            }
+        }
+        // MCU: set cursor once, then burst-write entire row to LCD via FSMC
+        LCD_SetCursor(x0, y0 + row);
+        LCD_WRAM_Prepare();
+        volatile uint16_t* lcd = (volatile uint16_t*)0x60000000;
+        for (int i = 0; i < n; ++i) {
+            *lcd = bmp16[i];
+        }
+#endif
+        ++row;
     }
 
-    // Free DEFLATE intermediate buffer if allocated (GUI_ALLOC, works Sim+MCU)
+    // Free DEFLATE intermediate buffer if allocated
     if (state.deflateBufHandle != 0) {
         GUI_ALLOC_Free(static_cast<GUI_HMEM>(state.deflateBufHandle));
     }
 
     GUI_ALLOC_Free(hOutBuf);
+    GUI_ALLOC_Free(hBmpBuf);
     if (hPalBuf != 0) GUI_ALLOC_Free(hPalBuf);
 }

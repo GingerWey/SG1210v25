@@ -1,15 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Core Codec Utilities
-// ---------------------------------------------------------------------------
-// CSGCodec.h — Shared encode/decode infrastructure:
-//              - CSG file header read / write
-//              - Picture header read / write
-//              - Alignment padding helpers
-//              - CRC computation over structured data
-//              - .csg binary file read / write
-//              - .cpp/.h source file export
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGCodec.h
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : CSG codec base class and factory.  CreateCodec(), EncodeSinglePicture(),
+               EncodeAtlas(), DecodePictureHeader(), DecodeAtlasHeader().
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 codec header)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_CSGCODEC_H_
 #define TOOLKITS_INCLUDE_CSGCODEC_H_
 

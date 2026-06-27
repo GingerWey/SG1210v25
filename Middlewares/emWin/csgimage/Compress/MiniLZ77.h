@@ -1,20 +1,17 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — MiniLZ77 dictionary compression codec
-// ---------------------------------------------------------------------------
-// MiniLZ77.h — Lightweight LZ77-style compressor / decompressor designed
-//              for resource-constrained MCU decoding.
-//
-//              Output format (CAS=3, standalone):
-//                [1-bit flag] + [data]
-//                flag=0 → literal:  8 bits of pixel byte
-//                flag=1 → match:    Dist_Bits bits offset
-//                                 + Len_Bits bits length code
-//              All fields are byte-aligned, fixed-length.
-//
-//              In DEFLATE mode (CAS=2), outputs raw symbol stream
-//              (literal, length, distance symbols) for Huffman coding.
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : MiniLZ77.h
+ Version     : V1.51
+ By          : Wey. Silver Grid
 
+ Description : MiniLZ77 dictionary compression codec — VP-style 8-token control
+               groups.  Lightweight LZ77 designed for MCU decoding.
+
+ Date        : 2026.06.26 (V1.51 — circular window indexing for large images)
+              2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #ifndef TOOLKITS_INCLUDE_COMPRESS_MINILZ77_H_
 #define TOOLKITS_INCLUDE_COMPRESS_MINILZ77_H_
 

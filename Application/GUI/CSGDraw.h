@@ -1,16 +1,18 @@
 ﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.h
- Version     : V1.01
+ Version     : V1.02
  By          : Wey. Silver Grid
 
- Description : CSG image drawing -- MCU-safe streaming decoder integration.
+ Description : CSG image drawing — MCU-safe streaming decoder integration.
                Uses CsgDecodeInit / CsgDecodePixels (no dynamic vectors).
                Memory allocated from emWin GUIHEAP, freed after drawing.
                Supports atlas sub-pictures and palette replacement.
 
- Date        : 2026.06.24 (V1.00 — initial CSG drawing API)
+ Date        : 2026.06.26 (V1.02 — unified streaming path, VxARGB FromCrm/ToCrm)
               2026.06.25 (V1.01 — added picIndex & saturation params)
+              2026.06.24 (V1.00 — initial CSG drawing API)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_CSGDRAW_H

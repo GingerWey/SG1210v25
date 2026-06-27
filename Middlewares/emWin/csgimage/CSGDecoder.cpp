@@ -1,7 +1,21 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Decoder implementation
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : CSGDecoder.cpp
+ Version     : V1.52
+ By          : Wey. Silver Grid
 
+ Description : CSG streaming decoder (MCU-safe).  CAS 0/1/2/3 dispatch.
+               MiniLZ77 circular window, RLE cross-batch DPS/ZRC/CPS/CPL pending,
+               DEFLATE Huffman→MiniLZ77 pipeline, GUI_ALLOC buffer management.
+
+ Date        : 2026.06.26 (V1.52 — DPS cross-batch pending fix, origCount guard
+                          raised to kCsgMaxWidth*kCsgMaxHeight)
+              2026.06.26 (V1.51 — streaming CAS 0/1/2/3, RLE pendRle, MiniLZ77
+                          pendMatchLen/pendRef, circular window indexing)
+              2026.06.25 (V1.50 — original CSG v1.5 decoder)
+*/
+//-----------------------------------------------------------------------------
 #include "CSGDecoder.h"
 #include "Compress/RLE.h"
 #include "Compress/Huffman.h"
@@ -496,15 +510,36 @@ static CSG_ErrCode DecodeRLE(CSGDecoderState* st,
 
     // Resume pending RLE frame from previous batch
     if (st->pendRleType >= 0 && st->pendRleCount > 0) {
-        int n = st->pendRleCount;
-        if (n > toDecode) n = toDecode;
-        uint8_t cri = (st->pendRleType == 0) ? 0 : st->pendRleCri;
-        for (int j = 0; j < n; ++j) {
-            WriteCrmPixel(output, dec, bpc, pal, cri);
-            ++outPos; ++dec;
+        if (st->pendRleType == 1) {
+            // DPS resume — each pixel reads its own CRI from the saved bit/byte position
+            int n = st->pendRleCount;
+            if (n > toDecode) n = toDecode;
+            for (int j = 0; j < n; ++j) {
+                uint8_t cri;
+                if (bpi > 0) {
+                    refill(bpi);
+                    cri = static_cast<uint8_t>(buf & ((1u << bpi) - 1));
+                    buf >>= bpi; bits -= bpi;
+                } else {
+                    cri = input[ip++];
+                }
+                WriteCrmPixel(output, dec, bpc, pal, cri);
+                ++outPos; ++dec;
+            }
+            st->pendRleCount -= n;
+            if (st->pendRleCount == 0) st->pendRleType = -1;
+        } else {
+            // ZRC/CPS/CPL resume — all pixels share the same CRI
+            int n = st->pendRleCount;
+            if (n > toDecode) n = toDecode;
+            uint8_t cri = (st->pendRleType == 0) ? 0 : st->pendRleCri;
+            for (int j = 0; j < n; ++j) {
+                WriteCrmPixel(output, dec, bpc, pal, cri);
+                ++outPos; ++dec;
+            }
+            st->pendRleCount -= n;
+            if (st->pendRleCount == 0) st->pendRleType = -1;
         }
-        st->pendRleCount -= n;
-        if (st->pendRleCount == 0) st->pendRleType = -1;
     }
 
     while (dec < toDecode) {
@@ -527,7 +562,8 @@ static CSG_ErrCode DecodeRLE(CSGDecoderState* st,
             }
         } else if (frameType == 1) {  // DPS — discrete pixels (1..64)
             int n = count + 1;
-            for (int j = 0; j < n && dec < toDecode; ++j) {
+            int j = 0;
+            for (; j < n && dec < toDecode; ++j) {
                 uint8_t cri;
                 if (bpi > 0) {
                     refill(bpi);
@@ -538,6 +574,10 @@ static CSG_ErrCode DecodeRLE(CSGDecoderState* st,
                 }
                 WriteCrmPixel(output, dec, bpc, pal, cri);
                 ++outPos; ++dec;
+            }
+            if (j < n) {
+                st->pendRleCount = n - j;
+                st->pendRleType  = 1;  // DPS — resume reads individual CRIs
             }
         } else if (frameType == 2) {  // CPS — short continuous run (1..64)
             int n = count + 1;
@@ -612,7 +652,7 @@ static CSG_ErrCode DecodeDEFLATE(CSGDecoderState* st,
             | (static_cast<uint32_t>(input[pos+2]) << 16)
             | (static_cast<uint32_t>(input[pos+3]) << 24);
         pos += 4;
-        if (origCount > 65536) return CSG_ErrCode::kErrBufferShort;
+        if (origCount > kCsgMaxWidth * kCsgMaxHeight) return CSG_ErrCode::kErrBufferShort;
 
         // maxLen
         if (pos >= inLen) return CSG_ErrCode::kErrHuffHeader;

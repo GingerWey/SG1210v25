@@ -1,7 +1,16 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — Static Huffman codec implementation
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : Huffman.cpp
+ Version     : V1.50
+ By          : Wey. Silver Grid
 
+ Description : Huffman codec — self-describing header, MSB-first bitstream
+               encode/decode, canonical codeword assignment.
+
+ Date        : 2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #include "Compress/Huffman.h"
 #include <cstring>
 #include <algorithm>

@@ -1,16 +1,17 @@
-// Copyright 2026 Wey. Silver Grid. All rights reserved.
-// CSG Toolkits — MiniLZ77 codec (VP-style)
-// ---------------------------------------------------------------------------
-// Encoding format:
-//   Control groups: [1 ctrl byte][up to 8 tokens]
-//   ctrl bit = 0 → literal (1 byte)
-//   ctrl bit = 1 → back-ref (2 bytes: [encLen][encDist])
-//     encLen  = matchLen - MIN_MATCH  (0..255)
-//     encDist = distance - 1          (0..127)
-//   Window = 128, MIN_MATCH = 3, MAX_MATCH = 258
-//   Full linear scan for longest match (small images, O(n²) acceptable)
-// ---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+/*
+ File        : MiniLZ77.cpp
+ Version     : V1.51
+ By          : Wey. Silver Grid
 
+ Description : MiniLZ77 codec — VP-style 8-token control groups, max match=258,
+               max lookback=128.  Circular window indexing for large images.
+
+ Date        : 2026.06.26 (V1.51 — circular window: win[pos % CSG_DEC_WINDOW_BYTES])
+              2026.06.25 (V1.50 — original CSG v1.5 implementation)
+*/
+//-----------------------------------------------------------------------------
 #include "Compress/MiniLZ77.h"
 #include <cstring>
 #include <algorithm>
