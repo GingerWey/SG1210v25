@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 /*
   GUI Picture
 
@@ -41,7 +41,7 @@ typedef struct tagGUIPICTURE
 // Draw Picture
 // picIndex: sub-picture index within an atlas (0-based, default 0)
 void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0,
-                     int picIndex = 0);
+                     int picIndex = 0, int saturation = 100);
 //---------------------------------------------------------------------------
 #ifdef __cplusplus
 }

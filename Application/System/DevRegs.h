@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : DevRegs.h
  Version     : V1.10
@@ -397,9 +397,9 @@ extern "C" {
   #define COIL_Stop               0
   #define COIL_Startup            0x33
   #define COIL_Monitor            0x35
-  #define COIL_KeppOn             0x53
-  #define COIL_KeppOff            0x5A
-  #define COIL_PassBy             0xA5
+  #define COIL_KeepOn             0x53
+  #define COIL_KeepOff            0x5A
+  #define COIL_Passby             0xA5
   #define COIL_ShutDownDelay      0xC5
   #define COIL_ShutDown           0xCC
   #define COIL_Fatal              0xE0
@@ -437,6 +437,10 @@ extern "C" {
 #define REG_DI5                   (REG_DigInp + 5)        // 旁路状态
 #define REG_DI6                   (REG_DigInp + 6)        // 加热器
 #define REG_DI7                   (REG_DigInp + 7)        // 风扇状态
+ #define REG_stBreakerON           REG_DI4
+ #define REG_stPassby              REG_DI5
+ #define REG_stHeater              REG_DI6
+ #define REG_stFan                 REG_DI7
   
 #define REG_RelayState            (REG_DigInp + NUM_DigInputs)  // 开出状态
 #define REG_RELAY0                (REG_RelayState + 0 )         // CK1-合闸

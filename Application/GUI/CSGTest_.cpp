@@ -23,7 +23,7 @@
 #include "GUI_Private.h"
 #include "GWinTypes.h"
 
-#include "GForm.h"
+#include "GFormCentra.h"
 #include "GUICntr.h"
 #include "GUIConf.h"
 #include "GUIMisc.h"
@@ -39,7 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "GFormRegistrar.h"
+#include "GFormCentraRegistrar.h"
 #include <GUI_Type.h>
 
 #ifdef __vmSIMULATOR__
@@ -251,7 +251,7 @@ static void _Close(const void* argument)
 //-----------------------------------------------------------------------------
 static void _OnTick(uint32_t uTick)
 {
-    (void)uTick;  // gform::Tick() sends Data.v=0, use GUI_GetTime() instead
+    (void)uTick;  // gfc::Tick() sends Data.v=0, use GUI_GetTime() instead
     uint32_t now = GUI_GetTime();
     if (now > m_FormState.uNextTick) {
         const auto& img = kImageList[m_FormState.curImage];
@@ -276,10 +276,10 @@ static void _OnKeyUp(uint16_t uwKey)
 {
     if (uwKey == KEY_ENTER) {
         MemLog("KEY_ENTER -> MainForm");
-        gform::ReplaceForm(WID_MainForm, nullptr);
+        gfc::ReplaceForm(WID_MainForm, nullptr);
     } else if (uwKey == KEY_ESCAPE) {
         MemLog("KEY_ESCAPE -> MainForm");
-        gform::ReplaceForm(WID_MainForm, nullptr);
+        gfc::ReplaceForm(WID_MainForm, nullptr);
     } else if (uwKey == 'B' || uwKey == 'b') {
         // Toggle background-only mode
         m_FormState.bgOnly = !m_FormState.bgOnly;
@@ -375,5 +375,5 @@ const GWinForm FSplashForm =
 };
 
 // Auto-register with new GForm system
-static const gform::FormRegistrar kRegSplash(WID_SplashForm, &FSplashForm, "Splash");
+static const gfc::FormRegistrar kRegSplash(WID_SplashForm, &FSplashForm, "Splash");
 //-----------------------------------------------------------------------------

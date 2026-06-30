@@ -4,15 +4,15 @@
  Version     : V1.00
  By          : Wey. Silver Grid
 
- Description : Platform abstraction layer for GForm system.
+ Description : Platform abstraction layer for GFormCentra system.
                Wraps std::mutex (simulator) vs osMutexId (MCU) behind a
                uniform Lock + ScopedLock interface.
 
  Date        : 2026.06.24
 */
 //-----------------------------------------------------------------------------
-#ifndef GUI_GFORM_PLATFORM_H
-#define GUI_GFORM_PLATFORM_H
+#ifndef GUI_GFC_PLATFORM_H
+#define GUI_GFC_PLATFORM_H
 
 //-----------------------------------------------------------------------------
 // Platform detection: __vmSIMULATOR__ is defined by the Visual Studio project.
@@ -24,7 +24,7 @@
   #include <cmsis_os2.h>
   #include <cmsis_os.h>
 
-  namespace gform {
+  namespace gfc {
   namespace platform {
 
   class Lock {
@@ -57,11 +57,11 @@
   };
 
   }  // namespace platform
-  }  // namespace gform
+  }  // namespace gfc
 
 #else
   // ── Simulator: no-op lock (single-threaded, avoids static init crash) ─
-  namespace gform {
+  namespace gfc {
   namespace platform {
 
   class Lock {
@@ -71,14 +71,14 @@
   };
 
   }  // namespace platform
-  }  // namespace gform
+  }  // namespace gfc
 
 #endif  // __vmSIMULATOR__
 
 //-----------------------------------------------------------------------------
 // RAII scoped lock — usable from both platforms
 //-----------------------------------------------------------------------------
-namespace gform {
+namespace gfc {
 
 class ScopedLock {
 public:
@@ -95,7 +95,7 @@ private:
     platform::Lock& m_lock;
 };
 
-}  // namespace gform
+}  // namespace gfc
 
 //-----------------------------------------------------------------------------
-#endif  // GUI_GFORM_PLATFORM_H
+#endif  // GUI_GFC_PLATFORM_H

@@ -1,6 +1,6 @@
 ﻿//-----------------------------------------------------------------------------
 /*
- File        : GForm.h
+ File        : GFormCentra.h
  Version     : V1.01
  By          : Wey. Silver Grid
 
@@ -15,18 +15,18 @@
                  FormRecord      — metadata + GWinForm* callback pointer
 
                Usage:
-                 1. Each form .cpp registers via FormRegistrar (GFormRegistrar.h).
-                 2. Call gform::Init() once at startup.
-                 3. Call gform::Tick() every 10ms from the GUI loop.
-                 4. Navigate via gform::PushForm / ReplaceForm / PopForm.
-                 5. Send messages via gform::SendMessage / KeyEvent.
+                 1. Each form .cpp registers via FormRegistrar (GFormCentraRegistrar.h).
+                 2. Call gfc::Init() once at startup.
+                 3. Call gfc::Tick() every 10ms from the GUI loop.
+                 4. Navigate via gfc::PushForm / ReplaceForm / PopForm.
+                 5. Send messages via gfc::SendMessage / KeyEvent.
 
- Date        : 2026.06.24 (V1.00 — initial GForm system)
+ Date        : 2026.06.24 (V1.00 — initial GFormCentra system)
               2026.06.25 (V1.01 — added TouchEvent API for touch screen)
 */
 //-----------------------------------------------------------------------------
-#ifndef GUI_GFORM_H
-#define GUI_GFORM_H
+#ifndef GUI_GFC_H
+#define GUI_GFC_H
 
 #include <cstdint>
 #include <cstddef>
@@ -63,10 +63,15 @@ constexpr uint16_t kFormIdInvalid = 0xFFFF;
   constexpr uint16_t WID_TimeDialog     = 112;
   constexpr uint16_t WID_WLGListForm    = 113;
   constexpr uint16_t WID_WLGViewForm    = 114;
+  constexpr uint16_t WID_DataListForm   = 115;
+  constexpr uint16_t WID_SystemLogForm  = 116;
+  constexpr uint16_t WID_DeviceTestForm = 117;
+  constexpr uint16_t WID_EthernetConfigForm = 118;
+  constexpr uint16_t WID_AboutForm      = 119;
 #endif
 
 //=============================================================================
-namespace gform {
+namespace gfc {
 
 //-----------------------------------------------------------------------------
 // Types
@@ -101,7 +106,7 @@ constexpr size_t kMaxStack  = 16;   // Navigation stack depth
 // Lifecycle
 //=============================================================================
 
-/// Initialize the GForm system. Must be called once before any other function.
+/// Initialize the GFormCentra system. Must be called once before any other function.
 /// Clears the registry, stack, and pending message queue.
 void Init();
 
@@ -205,7 +210,7 @@ void KeyEvent(uint32_t key, uint32_t pressedCnt);
 /// @param y       Y coordinate (display pixels)
 void TouchEvent(uint16_t action, uint16_t x, uint16_t y);
 
-}  // namespace gform
+}  // namespace gfc
 
 //-----------------------------------------------------------------------------
-#endif  // GUI_GFORM_H
+#endif  // GUI_GFC_H

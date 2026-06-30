@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : TaskApp.c
  Version     : V1.10
@@ -262,14 +262,14 @@ static void appTask(void *argument)
   if( 0x6ECDDDD6 == uHWId ) //|| 0x80BFA01F == uHWId )
     {
     // 控制器任务
-    CreateCtrlTask();
+    //CreateCtrlTask();
 
-    osDelay( 10 );
+    //osDelay( 10 );
       
-    CreateUARTTask();
+    //CreateUARTTask();
 
     // 启动看门狗
-    MX_IWDG_Init();
+    //MX_IWDG_Init();
     }
 //  else
 //    {

@@ -32,142 +32,133 @@ typedef struct tagMultiLangStrings
 //-----------------------------------------------------------------------------
 constexpr TMultiLangStrings listMultiStrings[] =
 {
-   { idDevFuncSUTC,        "智能欠压脱扣控制装置",       "Undervoltage Tirp Controller"}
-//  ,{ idGPDevFamiry,        "智能欠压脱扣控制装置",       "Smart Undervoltage Tirp Controller"}
+   { idDevFuncUVTC,        "智能欠压脱扣控制装置",         "Undervoltage Tirp Controller"}
+  ,{ idDevCopyright,       "Copyright(c) 2026 SilverGrid",  "Copyright(c) 2026 SilverGrid" }
+  ,{ idGPDevFamiry,        "SG1210",                       "SG1210"        }
 
+  
 //// 定值区
 //#if COLOR_BITS == 1
-//  ,{ idLabHBlockNo,        "%u区",                   "BN.%u"            }
+//  ,{ idLabHBlockNo,        "%u区",                "BN.%u"            }
 //#else
-//  ,{ idLabHBlockNo,        "定值 %u 区",             "SBLK No.:%u"      }
+//  ,{ idLabHBlockNo,        "定值 %u 区",          "SBLK No.:%u"      }
 //#endif
-//  ,{ idHintBlockNo,        "当前是：第 %u 区",       "The ACTIVE Block is No: %u" }
+//  ,{ idHintBlockNo,        "当前是：第 %u 区",    "The ACTIVE Block is No: %u" }
 
-//  ,{ idStatusLocal,       "就地",                        "Local"           }
-//  ,{ idStatusRemote,      "远方",                        "Remote"          }
-//  ,{ idStatusSpCharging,  "充电",                        "Chargeing"       }
-//  ,{ idStatusSpCharged,   "贮能",                        "Charged"         }
-// 界面语言                                                                   
-  ,{ idLANG_CHS,          "简体中文/CHS",                "简体中文/CHS"       }
-  ,{ idLANG_ENG,          "英文/English",                "英语/English"       }
+//  ,{ idStatusLocal,       "就地",                   "Local"           }
+//  ,{ idStatusRemote,      "远方",                   "Remote"          }
+//  ,{ idStatusSpCharging,  "充电",                   "Chargeing"       }
+//  ,{ idStatusSpCharged,   "贮能",                   "Charged"         }
+// 界面语言                                                              
+  ,{ idLANG_CHS,          "简体中文/CHS",           "简体中文/CHS"       }
+  ,{ idLANG_ENG,          "英文/English",           "英语/English"       }
 // 经销商列表
-  ,{ idVedor01,            "银网科技",                   "SilverGrid"        }
-  ,{ idCulture01,          "动力无限",                   "Dynamic infinite"  }
+  ,{ idVedor01,            "银网科技",              "SilverGrid"        }
+  ,{ idCulture01,          "动力无限",              "Dynamic infinite"  }
 // 常用按键
-  ,{ idBtnCapOk,          "确定",                        "Ok"                 }
-  ,{ idBtnCapCancel,      "放弃",                        "Cancel"             }
-  ,{ idBtnCapClose,       "关闭",                        "Close"              }
-//  ,{ idBtnCapYes,         "是",                         "Yes"              }
-//  ,{ idBtnCapNo,          "否",                         "No"               }
-//  ,{ idBtnCapBegin,       "开始",                       "Start"            }
-  ,{ idEnableYes,          "允许",                       "Enable"            }
-  ,{ idEnableNo,           "禁止",                       "Disable"           }
+  ,{ idBtnCapOk,          "确定",                   "Ok"                 }
+  ,{ idBtnCapCancel,      "放弃",                   "Cancel"             }
+  ,{ idBtnCapClose,       "关闭",                   "Close"              }
+//  ,{ idBtnCapYes,         "是",                    "Yes"              }
+//  ,{ idBtnCapNo,          "否",                    "No"               }
+//  ,{ idBtnCapBegin,       "开始",                  "Start"            }
+  ,{ idEnableYes,          "允许",                  "Enable"            }
+  ,{ idEnableNo,           "禁止",                  "Disable"           }
 
-  ,{ idSysMode0,           "正常工作",                   "Normal"            }
-  ,{ idSysMode1,           "正在起动",                   "Starting"          }
-  ,{ idSysMode2,           "正在校准",                   "Calibrating"       }
-  ,{ idSysMode3,           "传动试验",                   "Testing"           }
-  ,{ idSysMode4,           "正在维护参数",                "Configuring"      }
-  ,{ idSysMode5,           "软件故障",                   "FW Fatal"          }
-  ,{ idSysMode6,           "硬件故障",                   "HW Fatal"          }
-  ,{ idSysMode7,           "功能类型错误",                "Unknown FunType"  }
-  ,{ idSysMode8,           "定值错误",                   "Setting Fatal"     }
-  ,{ idSysModeX,           "未知状态",                   "Unknown Mode"      }
+  ,{ idSysMode0,           "正常工作",              "Normal"            }
+  ,{ idSysMode1,           "正在起动",              "Starting"          }
+  ,{ idSysMode2,           "正在校准",              "Calibrating"       }
+  ,{ idSysMode3,           "传动试验",              "Testing"           }
+  ,{ idSysMode4,           "正在维护参数",          "Configuring"      }
+  ,{ idSysMode5,           "软件故障",              "FW Fatal"          }
+  ,{ idSysMode6,           "硬件故障",              "HW Fatal"          }
+  ,{ idSysMode7,           "功能类型错误",          "Unknown FunType"  }
+  ,{ idSysMode8,           "定值错误",              "Setting Fatal"     }
+  ,{ idSysModeX,           "未知状态",              "Unknown Mode"      }
 
 // 系统出错信息           
-  ,{ idDevFault01,        "内部错误",                  "System fault!"              }
-  ,{ idDevFault02,        "内存不足",                  "No Memory!"                 }
-  ,{ idDevFault03,        "指针为空",                  "Null Pointer!"              }
-  ,{ idDevFault04,        "装置类型错误",              "Unknown Device type!"       }
-  ,{ idDevFault05,        "不识别的功能类型",           "Unknown Function type!"     }
-  ,{ idDevFault06,        "参数错误",                  "Illegal Parament!"          }
-  ,{ idDevFault07,        "寄存器地址错误",            "Illegal Register address!"  }
-  ,{ idDevFault08,        "令牌错误",                  "Token error!"               }
-  ,{ idDevFault09,        "给定的值不合法！",           "Illegal threshold!"        }
-  ,{ idDevFault10,        "硬件非法访问！",             "Illegal hardware access!"  }
+  ,{ idDevFault01,        "内部错误",               "System fault!"              }
+  ,{ idDevFault02,        "内存不足",               "No Memory!"                 }
+  ,{ idDevFault03,        "指针为空",               "Null Pointer!"              }
+  ,{ idDevFault04,        "装置类型错误",           "Unknown Device type!"       }
+  ,{ idDevFault05,        "不识别的功能类型",       "Unknown Function type!"     }
+  ,{ idDevFault06,        "参数错误",               "Illegal Parament!"          }
+  ,{ idDevFault07,        "寄存器地址错误",         "Illegal Register address!"  }
+  ,{ idDevFault08,        "令牌错误",               "Token error!"               }
+  ,{ idDevFault09,        "给定的值不合法！",       "Illegal threshold!"        }
+  ,{ idDevFault10,        "硬件非法访问！",         "Illegal hardware access!"  }
 //  // 装置故障             
-  ,{ iaCriticalInfo,      "捕捉到内部故障",                  "Find a error!"         }
-//  ,{ iaCriticalFW,        szCriticalFW,                  szEngCriticalFW     }
-//  ,{ iaCriticalHW,        szCriticalHW,                  szEngCriticalHW     }
-//  ,{ iaCriticalFT,        szCriticalFT,                  szEngCriticalFT     }
-//  ,{ iaCriticalDZ,        szCriticalDZ,                  szEngCriticalDZ     }
-//  ,{ iaCriticalUKN,       szCriticalUKN,                 szEngCriticalUKN    }
-//                                                                            
-//  ,{ iaCriticalFmt,       szCriticalFmt,                 szEngCriticalFmt    }
-//  ,{ iaCriticalRst,       szCriticalRst,                 szEngCriticalRst    }
-//  ,{ iaCriticalOk,        szCriticalOk,                  szEngCriticalOk     }
-//  ,{ iaCriticalFailed,    szCriticalFailed,              szEngCriticalFailed }
+  ,{ iaCriticalInfo,      "捕捉到内部故障",         "Find a error!"         }
+//  ,{ iaCriticalFW,        szCriticalFW,               szEngCriticalFW     }
+//  ,{ iaCriticalHW,        szCriticalHW,               szEngCriticalHW     }
+//  ,{ iaCriticalFT,        szCriticalFT,               szEngCriticalFT     }
+//  ,{ iaCriticalDZ,        szCriticalDZ,               szEngCriticalDZ     }
+//  ,{ iaCriticalUKN,       szCriticalUKN,              szEngCriticalUKN    }
+//                                                                         
+//  ,{ iaCriticalFmt,       szCriticalFmt,              szEngCriticalFmt    }
+//  ,{ iaCriticalRst,       szCriticalRst,              szEngCriticalRst    }
+//  ,{ iaCriticalOk,        szCriticalOk,               szEngCriticalOk     }
+//  ,{ iaCriticalFailed,    szCriticalFailed,           szEngCriticalFailed }
 // 主窗体
-  ,{ idMainFmSt11,        "旁路",                        "Passby"            }
-  ,{ idMainFmSt12,        "脱扣动作",                    "Tripper action"    }
-  ,{ idMainFmSt13,        "正常吸合",                    "Normal "           }
+  ,{ idMainLabel01,       "输入：",                  "Vin ="            }
+  ,{ idMainLabel02,       "输出：",                  "Vout="    }
+  ,{ idMainLabel03,       "充电：",                  "Ichg="           }
+  ,{ idMainLabel04,       "放电：",                  "Iexp="           }
+  ,{ idMainLabel05,       "温度：",                  "Tbat="           }
+  ,{ idMainLabel06,       "电池：",                  "Batt="           }
 
-  ,{ idMainFmSt21,        "关闭",                        "Shutdown"          }
-  ,{ idMainFmSt22,        "启动",                        "Startup"           }
-  ,{ idMainFmSt23,        "监控",                        "Monitor"           }
-  ,{ idMainFmSt24,        "失电保持",                    "Holding"           }
-  ,{ idMainFmSt25,        "得电闭锁",                    "Latch"             }
-  ,{ idMainFmSt26,        "旁路保持",                    "Passby"            }
-  ,{ idMainFmSt27,        "待关机",                      "Wait Shutdown"     }
-  ,{ idMainFmSt28,        "待机",                        "Shutdown "         }
-  ,{ idMainFmSt29,        "装置故障",                    "Device Fatal"      }
+  ,{ idMainStat01,        "关闭",                   "Shutdown"          }
+  ,{ idMainStat02,        "启动",                   "Startup"           }
+  ,{ idMainStat03,        "监控",                   "Monitor"           }
+  ,{ idMainStat04,        "失电保持",               "Holding"           }
+  ,{ idMainStat05,        "得电闭锁",               "Latch"             }
+  ,{ idMainStat06,        "旁路运行",               "Passby"            }
+  ,{ idMainStat07,        "待关机",                 "Wait Shutdown"     }
+  ,{ idMainStat08,        "待机",                   "Shutdown "         }
+  ,{ idMainStat09,        "装置故障",               "Device Fatal"      }
 
-  ,{ idMainFmSt31,        "地址：%d",                    "DevAddr:%d"        }
+  ,{ idMainFmSt01,        "地址：%d",               "DevAddr:%d"        }
 
-  ,{ idMainFmSt41,        "%0.1fV",                       "%0.1fV"           }
-  ,{ idMainFmSt42,        "%0.3fA",                       "%0.3fA"          }
-  ,{ idMainFmSt43,        "%0.1f℃",                      "%0.1f℃"          }
-  ,{ idMainFmSt44,        "%0.1f%%",                      "%0.1f%%"          }
+  ,{ idMainFmSt02,        "%0.1fV",                 "%0.1fV"           }
+  ,{ idMainFmSt03,        "%0.3fA",                 "%0.3fA"          }
+  ,{ idMainFmSt04,        "%0.1f℃",                "%0.1f℃"          }
+  ,{ idMainFmSt05,        "%0.1f%%",                "%0.1f%%"          }
 
-//  ,{ idMainFmSt51,        "失压",                        "Voltage loss"    }
-//  ,{ idMainFmSt52,        "交流电压",                    "AC Voltage"       }
+//  ,{ idMainFmSt51,        "失压",                 "Voltage loss"    }
+//  ,{ idMainFmSt52,        "交流电压",             "AC Voltage"       }
   
 // 主菜单
-  ,{ idMenuCaption,       "功能菜单",                    "Meun"               }
+  ,{ idMenuCaption,       "SG1210功能菜单",         "SG1210Meun"        }
   
-  ,{ idMenuName1,         "事件报告",                    "Reports"            }
-//  ,{ idMenuDesp1,         "查询各类事件报告记录",        ""                 }
-#if COLOR_BITS == 1
-  ,{ idMenuName1_1,       "事件记录",                    "Event Logs"         }
-  ,{ idMenuDesp1_1,       "查询种类事件的记录",          ""                   }
-  ,{ idMenuName1_2,       "告警记录",                    "Alarm Logs"         }
-  ,{ idMenuDesp1_2,       "查询告警的记录",              ""                   }
-  ,{ idMenuName1_3,       "故障记录",                    "Fault Logs"         }
-//  ,{ idMenuDesp1_3,       "查询故障的记录",              ""                   }
-//  ,{ idMenuName1_4,       "电流故障",                    "Current Fault"      }
-//  ,{ idMenuDesp1_4,       "查询电流型故障记录",          ""                   }
-//  ,{ idMenuName1_5,       "遥控记录",                    "RmtCtrl Logs"       }
-//  ,{ idMenuDesp1_5,       "查询遥控操作记录",             ""                  }
-//  ,{ idMenuName1_6,       "逻辑事件",                    "Logic Logs"         }
-//  ,{ idMenuDesp1_6,       "查询逻辑事件",                ""                   }
-//  ,{ idMenuName1_7,       "波形记录",                    "Waveform Records"   }
-//  ,{ idMenuDesp1_7,       "查询波形事件",                ""                   }
-//  ,{ idMenuName1_8,       "触发录波",                    "WaveLog Trigger"    }
-//  ,{ idMenuDesp1_8,       "触发波形记录",                ""                   }
- // ,{ idMenuName1_0,       "最新报告",                    "Last Logs"        }
-#else
-  ,{ idMenuName1_1,       "事件记录",                    "Event Logs"         }
-//  ,{ idMenuDesp1_1,       "查询装置操作等事件的记录",    ""                 }
-  ,{ idMenuName1_2,       "告警记录",                    "Alarm Logs"        }
-//  ,{ idMenuDesp1_2,       "查询告警事件的记录",          ""                 }
-  ,{ idMenuName1_3,       "动作记录",                    "Fault Logs"        }
-//  ,{ idMenuDesp1_3,       "查询故障事件的记录",          ""                 }
-//  ,{ idMenuName1_4,       "电流故障事件",                "Current Fault"   }
-//  ,{ idMenuDesp1_4,       "查询电流型故障记录",          ""                 }
-//  ,{ idMenuName1_5,       "遥控操作记录",                "RmtCtrl Logs"    }
-//  ,{ idMenuDesp1_5,       "查询遥控操作录波记录",        ""                 }
-//  ,{ idMenuName1_6,       "查询逻辑事件",                "Logic Logs"       }
-//  ,{ idMenuDesp1_6,       "查询逻辑事件记录",            ""                 }
-//  ,{ idMenuName1_7,       "故障录波记录",                "Waveform Records" }
-//  ,{ idMenuDesp1_7,       "查看故障录波波形记录和波形",  ""                  }
-//  ,{ idMenuName1_0,       "最新报告",                    "Last Logs"        }
-#endif
+  ,{ idMenuName1,         "测量",                   "Measure"           }
+  ,{ idMenuDesp1,         "查询实时测量数据",       "Browse Realtime data" }
 
-  ,{ idMenuName2,         "装置参数",                    "Config"             }
+  ,{ idMenuName2,         "事件",                   "Event"             }
+  ,{ idMenuDesp2,         "调阅事件记录",           "Browse event log"  }
 
-  ,{ idMenuName3,         "通信参数",                    "Comm Config"        }
+  ,{ idMenuName3,         "日志",                   "Log"               }
+  ,{ idMenuDesp3,         "调阅装置运行日志",       "Browse device log" }
 
-  ,{ idMenuName4,         "装置信息",                    "Device Info",       }
+  ,{ idMenuName4,         "录波",                   "Wavelog",        }
+  ,{ idMenuDesp4,         "调阅事件录波记录",       "Browse Wavelog " }
+
+  ,{ idMenuName5,         "调试",                   "Test",            }
+  ,{ idMenuDesp5,         "装置传动试验",           "Device trip test" }
+
+  ,{ idMenuName6,         "逻辑",                   "Logic",       }
+  ,{ idMenuDesp6,         "配置装置保护参数",       "Config protection logic" }
+
+  ,{ idMenuName7,         "装置",                   "Device",       }
+  ,{ idMenuDesp7,         "配置装置工作参数",       "Config device" }
+
+  ,{ idMenuName8,         "串口",                   "RS485",       }
+  ,{ idMenuDesp8,         "配置串口工作参数",       "Config RS485" }
+
+  ,{ idMenuName9,         "网口",                   "Ethernet",       }
+  ,{ idMenuDesp9,         "配置以太口工作参数",     "Config ethernet" }
+
+  ,{ idMenuName10,         "关于",                  "About",       }
+  ,{ idMenuDesp10,         "查看装置版本信息",      "Device information" }
 
 //// 恢复默认值
 //  ,{ idMenuRstSetting,    szMenuRstSetting,              szEngMenuRstSetting     }
@@ -216,10 +207,7 @@ constexpr TMultiLangStrings listMultiStrings[] =
   ,{ idSetPSWDOk,         szSetPSWDOk,                   szEngSetPSWDOk       }
   ,{ idSetPSWDOk1,        szSetPSWDOk1,                  szEngSetPSWDOk1      }
   ,{ idSetPSWDOk2,        szSetPSWDOk2,                  szEngSetPSWDOk2      }
-// 事件列表窗体
-  ,{ idDateTimeFormat,    "%02u-%02u %02u:%02u\"%02u'%03u", "%02u-%02u %02u:%02u\"%02u'%03u" }
-  ,{ idEventEmpty,        "无记录",                      "No Record"                         }
-  ,{ idEvtDataEmpty,      "无数据",                      "No Data"                           }
+  
 // 切换运行区窗体
 //#if COLOR_BITS == 1
 //  ,{ idSSFmCurBlock,      "%u",                          "%u"                              }
@@ -263,6 +251,16 @@ constexpr TMultiLangStrings listMultiStrings[] =
 // 枚举提示
   ,{ idEnumChanged,       szEnumChanged,               szEngEnumChanged     }
   ,{ idEnumChgRst,        szEnumChgRst,                szEngEnumChgRst      }
+
+// 事件列表窗体
+  ,{ idEventCatalog1,     "日志记录",                      "Log record"     }
+  ,{ idEventCatalog2,     "报警记录",                      "Alarm log"      }
+  ,{ idEventCatalog3,     "事件记录",                      "Fatal log"      }
+  ,{ idDateTimeFormat,    "%02u-%02u %02u:%02u\"%02u'%03u", "%02u-%02u %02u:%02u\"%02u'%03u" }
+  ,{ idEventEmpty,        "无记录",                      "No Record"                         }
+  ,{ idEvtDataEmpty,      "无数据",                      "No Data"                           }
+
+  
 // 设备参数
   ,{ idDevCfgName01,      "功能类型：",                "Device Type"         }
   ,{ idDevCfgName02,      "界面语言：",                "Language"            }

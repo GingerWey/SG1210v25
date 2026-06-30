@@ -1,50 +1,4 @@
-﻿//-----------------------------------------------------------------------------
-/*
- File        : GWinTypes.h
- Version     : V1.10
- By          : Silver Grid Technology
- Description : WindowSystem
-        
- Date        : 2023.12.05
-*/
-//-----------------------------------------------------------------------------
-#ifndef GUI_WGIN_TYPES_H
-#define GUI_WGIN_TYPES_H
-
-#include "GUIMessage.h"
-//-----------------------------------------------------------------------------
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include <cstdint>
-//=============================================================================
-// Global macros
-//-----------------------------------------------------------------------------
-// Standard colors
-#define  GUI_CR_SETC      0x00006B35    // VIStandard colors
-#define  GUI_CR_SETC1     0x00E2E418    // VIStandard colors
-//=============================================================================
-// Global data structures
-//-----------------------------------------------------------------------------
-// 
-typedef void (*TGWVoidProc)(const void*);
-typedef void (*TGWU32Proc)(uint32_t);
-typedef void (*TGWMsgProc)(GM_MESSAGE*);
-//-----------------------------------------------------------------------------
-// Form structure pointer
-typedef struct tagGWinForm
-{
-  TGWVoidProc  pInit;
-  TGWVoidProc  pShow;
-  TGWVoidProc  pClose; // CloseCallCallGUICntr
-  TGWMsgProc   pMsg;
-} GWinForm;
-
-typedef const GWinForm*   constGwinFormPtr;
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-#ifdef __cplusplus
-}
-#endif
-//-----------------------------------------------------------------------------
-#endif // GUI_WGIN_TYPES_H
+﻿//-----------------------------------------------------------------------------/* File        : GWinTypes.h Version     : V1.10
+ By          : Silver Grid Technology Description : WindowSystem         Date        : 2023.12.05*///-----------------------------------------------------------------------------#ifndef GUI_WGIN_TYPES_H#define GUI_WGIN_TYPES_H
+#include "GUIMessage.h"#include <cstdint>//-----------------------------------------------------------------------------#ifdef __cplusplusextern "C" {#endif//=============================================================================// Global macros//-----------------------------------------------------------------------------// Standard colors#define  GUI_CR_SETC      0x00006B35    // VIStandard colors#define  GUI_CR_SETC1     0x00E2E418    // VIStandard colors//=============================================================================// Global data structures//-----------------------------------------------------------------------------// typedef void (*TGWVoidProc)(const void*);typedef void (*TGWU32Proc)(uint32_t);typedef void (*TGWMsgProc)(GM_MESSAGE*);//-----------------------------------------------------------------------------// Form structure pointertypedef struct tagGWinForm{  TGWVoidProc  pInit;  TGWVoidProc  pShow;  TGWVoidProc  pClose; // CloseCallCallGUICntr  TGWMsgProc   pMsg;} GWinForm;
+typedef const GWinForm*   constGwinFormPtr;//-----------------------------------------------------------------------------//-----------------------------------------------------------------------------#ifdef __cplusplus}#endif//-----------------------------------------------------------------------------#endif // GUI_WGIN_TYPES_H

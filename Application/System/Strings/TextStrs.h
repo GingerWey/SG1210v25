@@ -22,7 +22,10 @@ extern "C" {
 // 全局宏
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-#define idDevFuncSUTC         0x1000    //
+#define idDevFuncUVTC         0x1000    //
+
+#define idDevCopyright        0x1008    //
+
 
 // 封面
 #define idGPDevFamiry         0x1010    //
@@ -97,170 +100,194 @@ extern "C" {
 #define iaCriticalFailed      0x1329    //
 
 // 主窗体信息
-#define idMainFmSt11          0x1501
-#define idMainFmSt12          0x1502
-#define idMainFmSt13          0x1503
+#define idMainLabel01         0x1501
+#define idMainLabel02         0x1502
+#define idMainLabel03         0x1503
+#define idMainLabel04         0x1504
+#define idMainLabel05         0x1505
+#define idMainLabel06         0x1506
+#define idMainLabel07         0x1507
+#define idMainLabel08         0x1508
+#define idMainLabel09         0x1509
 
-#define idMainFmSt21          0x1511
-#define idMainFmSt22          0x1512
-#define idMainFmSt23          0x1513
-#define idMainFmSt24          0x1514
-#define idMainFmSt25          0x1515
-#define idMainFmSt26          0x1516
-#define idMainFmSt27          0x1517
-#define idMainFmSt28          0x1518
-#define idMainFmSt29          0x1519
+#define idMainStat01          0x1571
+#define idMainStat02          0x1572
+#define idMainStat03          0x1573
+#define idMainStat04          0x1574
+#define idMainStat05          0x1575
+#define idMainStat06          0x1576
+#define idMainStat07          0x1577
+#define idMainStat08          0x1578
+#define idMainStat09          0x1579
 
-#define idMainFmSt31          0x1521
+#define idMainFmSt01          0x1580
+#define idMainFmSt02          0x1581
+#define idMainFmSt03          0x1582
+#define idMainFmSt04          0x1583
+#define idMainFmSt05          0x1584
 
-#define idMainFmSt41          0x1531
-#define idMainFmSt42          0x1532
-#define idMainFmSt43          0x1533
-#define idMainFmSt44          0x1534
-
-#define idMainFmSt51          0x1541
-#define idMainFmSt52          0x1542
 
 // 主菜单
 #define idMenuCaption         0x1800    //
 
 #define idMenuName1           0x1810    //
 #define idMenuDesp1           0x1811    //
-#define idMenuName1_1         0x1812    //
-#define idMenuDesp1_1         0x1813    //
-#define idMenuName1_2         0x1814    //
-#define idMenuDesp1_2         0x1815    //
-#define idMenuName1_3         0x1816    //
-#define idMenuDesp1_3         0x1817    //
-#define idMenuName1_4         0x1818    //
-#define idMenuDesp1_4         0x1819    //
-#define idMenuName1_5         0x181A    //
-#define idMenuDesp1_5         0x181B    //
-#define idMenuName1_6         0x181C    //
-#define idMenuDesp1_6         0x181D    //
-#define idMenuName1_7         0x181E    //
-#define idMenuDesp1_7         0x181F    //
+#define idMenuName2           0x1812    //
+#define idMenuDesp2           0x1813    //
+#define idMenuName3           0x1814    //
+#define idMenuDesp3           0x1815    //
+#define idMenuName4           0x1816    //
+#define idMenuDesp4           0x1817    //
+#define idMenuName5           0x1818    //
+#define idMenuDesp5           0x1819    //
+#define idMenuName6           0x181A    //
+#define idMenuDesp6           0x181B    //
+#define idMenuName7           0x181C    //
+#define idMenuDesp7           0x181D    //
+#define idMenuName8           0x181E    //
+#define idMenuDesp8           0x181F    //
+#define idMenuName9           0x1820    //
+#define idMenuDesp9           0x1821    //
+#define idMenuName10          0x1822    //
+#define idMenuDesp10          0x1823    //
 
-#define idMenuName2           0x1820    //
-#define idMenuDesp2           0x1821    //
-#define idMenuName2_1         0x1822    //
-#define idMenuDesp2_1         0x1823    //
-#define idMenuName2_2         0x1824    //
-#define idMenuDesp2_2         0x1825    //
-#define idMenuName2_3         0x1826    //
-#define idMenuDesp2_3         0x1827    //
-#define idMenuName2_4         0x1828    //
-#define idMenuDesp2_4         0x1829    //
-#define idMenuName2_5         0x182A    //
-#define idMenuDesp2_5         0x182B    //
-#define idMenuName2_6         0x182C    //
-#define idMenuDesp2_6         0x182D    //
-#define idMenuName2_7         0x182E    //
-#define idMenuDesp2_7         0x182F    //
+//#define idMenuName1           0x1810    //
+//#define idMenuDesp1           0x1811    //
+//#define idMenuName1_1         0x1812    //
+//#define idMenuDesp1_1         0x1813    //
+//#define idMenuName1_2         0x1814    //
+//#define idMenuDesp1_2         0x1815    //
+//#define idMenuName1_3         0x1816    //
+//#define idMenuDesp1_3         0x1817    //
+//#define idMenuName1_4         0x1818    //
+//#define idMenuDesp1_4         0x1819    //
+//#define idMenuName1_5         0x181A    //
+//#define idMenuDesp1_5         0x181B    //
+//#define idMenuName1_6         0x181C    //
+//#define idMenuDesp1_6         0x181D    //
+//#define idMenuName1_7         0x181E    //
+//#define idMenuDesp1_7         0x181F    //
 
-#define idMenuName3           0x1830    //
-#define idMenuDesp3           0x1831    //
-#define idMenuName3_1         0x1832    //
-#define idMenuDesp3_1         0x1833    //
-#define idMenuName3_2         0x1834    //
-#define idMenuDesp3_2         0x1835    //
-#define idMenuName3_3         0x1836    //
-#define idMenuDesp3_3         0x1837    //
-#define idMenuName3_4         0x1838    //
-#define idMenuDesp3_4         0x1839    //
-#define idMenuName3_5         0x183A    //
-#define idMenuDesp3_5         0x183B    //
-#define idMenuName3_6         0x183C    //
-#define idMenuDesp3_6         0x183D    //
-#define idMenuName3_7         0x183E    //
-#define idMenuDesp3_7         0x183F    //
-#define idMenuName3_8         0x1840    //
-#define idMenuDesp3_8         0x1841    //
+//#define idMenuName2           0x1820    //
+//#define idMenuDesp2           0x1821    //
+//#define idMenuName2_1         0x1822    //
+//#define idMenuDesp2_1         0x1823    //
+//#define idMenuName2_2         0x1824    //
+//#define idMenuDesp2_2         0x1825    //
+//#define idMenuName2_3         0x1826    //
+//#define idMenuDesp2_3         0x1827    //
+//#define idMenuName2_4         0x1828    //
+//#define idMenuDesp2_4         0x1829    //
+//#define idMenuName2_5         0x182A    //
+//#define idMenuDesp2_5         0x182B    //
+//#define idMenuName2_6         0x182C    //
+//#define idMenuDesp2_6         0x182D    //
+//#define idMenuName2_7         0x182E    //
+//#define idMenuDesp2_7         0x182F    //
 
-#define idMenuName4           0x1850    //
-#define idMenuDesp4           0x1851    //
-#define idMenuName4_1         0x1852    //
-#define idMenuDesp4_1         0x1853    //
-#define idMenuName4_1a        0x1854    //
-#define idMenuDesp4_1a        0x1855    //
-#define idMenuName4_2         0x1856    //
-#define idMenuDesp4_2         0x1857    //
-#define idMenuName4_2a        0x1858    //
-#define idMenuDesp4_2a        0x1859    //
-#define idMenuName4_3         0x185A    //
-#define idMenuDesp4_3         0x185B    //
-#define idMenuName4_3a        0x185C    //
-#define idMenuDesp4_3a        0x185D    //
-#define idMenuName4_4         0x185E    //
-#define idMenuDesp4_4         0x185F    //
-#define idMenuName4_4a        0x1860    //
-#define idMenuDesp4_4a        0x1861    //
-#define idMenuName4_5         0x1862    //
-#define idMenuDesp4_5         0x1863    //
-#define idMenuName4_5a        0x1864    //
-#define idMenuDesp4_5a        0x1865    //
-#define idMenuName4_6         0x1866    //
-#define idMenuDesp4_6         0x1867    //
-#define idMenuName4_6a        0x1868    //
-#define idMenuDesp4_6a        0x1869    //
-#define idMenuName4_7         0x186A    //
-#define idMenuDesp4_7         0x186B    //
-#define idMenuName4_8         0x186C    //
-#define idMenuDesp4_8         0x186D    //
-#define idMenuName4_9         0x186E    //
-#define idMenuDesp4_9         0x186F    //
-#define idMenuName4_10        0x1870    //
-#define idMenuDesp4_10        0x1871    //
-#define idMenuName4_11        0x1872    //
-#define idMenuDesp4_11        0x1873    //
+//#define idMenuName3           0x1830    //
+//#define idMenuDesp3           0x1831    //
+//#define idMenuName3_1         0x1832    //
+//#define idMenuDesp3_1         0x1833    //
+//#define idMenuName3_2         0x1834    //
+//#define idMenuDesp3_2         0x1835    //
+//#define idMenuName3_3         0x1836    //
+//#define idMenuDesp3_3         0x1837    //
+//#define idMenuName3_4         0x1838    //
+//#define idMenuDesp3_4         0x1839    //
+//#define idMenuName3_5         0x183A    //
+//#define idMenuDesp3_5         0x183B    //
+//#define idMenuName3_6         0x183C    //
+//#define idMenuDesp3_6         0x183D    //
+//#define idMenuName3_7         0x183E    //
+//#define idMenuDesp3_7         0x183F    //
+//#define idMenuName3_8         0x1840    //
+//#define idMenuDesp3_8         0x1841    //
 
-#define idMenuName5           0x1880    //
-#define idMenuDesp5           0x1881    //
+//#define idMenuName4           0x1850    //
+//#define idMenuDesp4           0x1851    //
+//#define idMenuName4_1         0x1852    //
+//#define idMenuDesp4_1         0x1853    //
+//#define idMenuName4_1a        0x1854    //
+//#define idMenuDesp4_1a        0x1855    //
+//#define idMenuName4_2         0x1856    //
+//#define idMenuDesp4_2         0x1857    //
+//#define idMenuName4_2a        0x1858    //
+//#define idMenuDesp4_2a        0x1859    //
+//#define idMenuName4_3         0x185A    //
+//#define idMenuDesp4_3         0x185B    //
+//#define idMenuName4_3a        0x185C    //
+//#define idMenuDesp4_3a        0x185D    //
+//#define idMenuName4_4         0x185E    //
+//#define idMenuDesp4_4         0x185F    //
+//#define idMenuName4_4a        0x1860    //
+//#define idMenuDesp4_4a        0x1861    //
+//#define idMenuName4_5         0x1862    //
+//#define idMenuDesp4_5         0x1863    //
+//#define idMenuName4_5a        0x1864    //
+//#define idMenuDesp4_5a        0x1865    //
+//#define idMenuName4_6         0x1866    //
+//#define idMenuDesp4_6         0x1867    //
+//#define idMenuName4_6a        0x1868    //
+//#define idMenuDesp4_6a        0x1869    //
+//#define idMenuName4_7         0x186A    //
+//#define idMenuDesp4_7         0x186B    //
+//#define idMenuName4_8         0x186C    //
+//#define idMenuDesp4_8         0x186D    //
+//#define idMenuName4_9         0x186E    //
+//#define idMenuDesp4_9         0x186F    //
+//#define idMenuName4_10        0x1870    //
+//#define idMenuDesp4_10        0x1871    //
+//#define idMenuName4_11        0x1872    //
+//#define idMenuDesp4_11        0x1873    //
 
-#define idMenuName6           0x1890    //
-#define idMenuDesp6           0x1891    //
-#define idMenuName6_1         0x1892    //
-#define idMenuDesp6_1         0x1893    //
-#define idMenuName6_2         0x1894    //
-#define idMenuDesp6_2         0x1895    //
-#define idMenuName6_3         0x1896    //
-#define idMenuDesp6_3         0x1897    //
-#define idMenuName6_4         0x1898    //
-#define idMenuDesp6_4         0x1899    //
-#define idMenuName6_5         0x189A    //
-#define idMenuDesp6_5         0x189B    //
+//#define idMenuName5           0x1880    //
+//#define idMenuDesp5           0x1881    //
 
-#define idMeasAdjuest         0x18A0    //
-#define idMenuName7           0x18A1    //
-#define idMenuDesp7           0x18A2    //
-#define idMenuName7_1         0x18A3    //
-#define idMenuDesp7_1         0x18A4    //
-#define idMenuName7_2         0x18A5    //
-#define idMenuDesp7_2         0x18A6    //
-#define idMenuName7_3         0x18A7    //
-#define idMenuDesp7_3         0x18A8    //
-#define idMenuName7_4         0x18A9    //
-#define idMenuDesp7_4         0x18AA    //
-#define idMenuName7_5         0x18AB    //
-#define idMenuDesp7_5         0x18AC    //
-#define idMenuName7_6         0x18AD    //
-#define idMenuDesp7_6         0x18AE    //
-#define idMenuName7_7         0x18AF    //
-#define idMenuDesp7_7         0x18B0    //
-#define idMenuName7_8         0x18B1    //
-#define idMenuDesp7_8         0x18B2    //
-#define idMenuName7_0         0x18BA    //
-#define idMenuDesp7_0         0x18BB    //
+//#define idMenuName6           0x1890    //
+//#define idMenuDesp6           0x1891    //
+//#define idMenuName6_1         0x1892    //
+//#define idMenuDesp6_1         0x1893    //
+//#define idMenuName6_2         0x1894    //
+//#define idMenuDesp6_2         0x1895    //
+//#define idMenuName6_3         0x1896    //
+//#define idMenuDesp6_3         0x1897    //
+//#define idMenuName6_4         0x1898    //
+//#define idMenuDesp6_4         0x1899    //
+//#define idMenuName6_5         0x189A    //
+//#define idMenuDesp6_5         0x189B    //
 
-#define idMenuName8           0x18C0    //
-#define idMenuDesp8           0x18C1    //
-#define idMenuName8_1         0x18C2    //
-#define idMenuDesp8_1         0x18C3    //
-#define idMenuName8_2         0x18C4    //
-#define idMenuDesp8_2         0x18C5    //
+//#define idMeasAdjuest         0x18A0    //
+//#define idMenuName7           0x18A1    //
+//#define idMenuDesp7           0x18A2    //
+//#define idMenuName7_1         0x18A3    //
+//#define idMenuDesp7_1         0x18A4    //
+//#define idMenuName7_2         0x18A5    //
+//#define idMenuDesp7_2         0x18A6    //
+//#define idMenuName7_3         0x18A7    //
+//#define idMenuDesp7_3         0x18A8    //
+//#define idMenuName7_4         0x18A9    //
+//#define idMenuDesp7_4         0x18AA    //
+//#define idMenuName7_5         0x18AB    //
+//#define idMenuDesp7_5         0x18AC    //
+//#define idMenuName7_6         0x18AD    //
+//#define idMenuDesp7_6         0x18AE    //
+//#define idMenuName7_7         0x18AF    //
+//#define idMenuDesp7_7         0x18B0    //
+//#define idMenuName7_8         0x18B1    //
+//#define idMenuDesp7_8         0x18B2    //
+//#define idMenuName7_0         0x18BA    //
+//#define idMenuDesp7_0         0x18BB    //
 
-#define idMenuName9           0x18D1    //
-#define idMenuDesp9           0x18D2    //
+//#define idMenuName8           0x18C0    //
+//#define idMenuDesp8           0x18C1    //
+//#define idMenuName8_1         0x18C2    //
+//#define idMenuDesp8_1         0x18C3    //
+//#define idMenuName8_2         0x18C4    //
+//#define idMenuDesp8_2         0x18C5    //
+
+//#define idMenuName9           0x18D1    //
+//#define idMenuDesp9           0x18D2    //
 
 //// 工厂菜单
 //#define idMenuName0           0x18F0    //
@@ -277,99 +304,104 @@ extern "C" {
 //#define idMenuDesp0_5         0x18FB    //
 
 // 恢复默认值
-#define idMenuRstSetting      0x1D00    //
-#define idMenuRstSetCfgOk     0x1D01    //
-#define idMenuRstSetCfgErr    0x1D02    //
-#define idMenuRstDevCfg       0x1D03    //
-#define idMenuRstDevCfgOk     0x1D04    //
-#define idMenuRstDevCfgErr    0x1D05    //
+#define idMenuRstSetting      0x1900    //
+#define idMenuRstSetCfgOk     0x1901    //
+#define idMenuRstSetCfgErr    0x1902    //
+#define idMenuRstDevCfg       0x1903    //
+#define idMenuRstDevCfgOk     0x1904    //
+#define idMenuRstDevCfgErr    0x1905    //
 // 菜单内提示信息
-#define idFuncLocked          0x1D10    //
-#define idFuncFailed          0x1D11    //
-#define idFuncUnanth          0x1D12    //
+#define idFuncLocked          0x1910    //
+#define idFuncFailed          0x1911    //
+#define idFuncUnanth          0x1912    //
 // 清除事件记录 确认
-#define idClrEventLogCfm      0x1D20    //
-#define idClrAlarmLogCfm      0x1D21    //
-#define idClrFaultLogCfm      0x1D22    //
-#define idClrEventLogOk       0x1D23    //
-#define idClrAlarmLogOk       0x1D24    //
-#define idClrFaultLogOk       0x1D25    //
-#define idClrWaveLogCfm       0x1D26    //
-#define idClrWaveLogOk        0x1D27    //
-#define idClrWaveLogFail      0x1D28    //
-#define idClrMeteringCfm      0x1D29    //
-#define idClrMeteringOk       0x1D2A    //
-#define idClrMeteringFail     0x1D2B    //
+#define idClrEventLogCfm      0x1920    //
+#define idClrAlarmLogCfm      0x1921    //
+#define idClrFaultLogCfm      0x1922    //
+#define idClrEventLogOk       0x1923    //
+#define idClrAlarmLogOk       0x1924    //
+#define idClrFaultLogOk       0x1925    //
+#define idClrWaveLogCfm       0x1926    //
+#define idClrWaveLogOk        0x1927    //
+#define idClrWaveLogFail      0x1928    //
+#define idClrMeteringCfm      0x1929    //
+#define idClrMeteringOk       0x192A    //
+#define idClrMeteringFail     0x192B    //
 
 // 重启装置确认
-#define idDeviceResetCfm      0x1D2F    //
+#define idDeviceResetCfm      0x192F    //
 
 // 用户登录窗体
-#define idLoginCap1           0x1D40    //
-#define idLoginCap2           0x1D41    //
-#define idLoginCap3           0x1D42    //
-#define idLoginApply          0x1D43    //
-#define idLoginChkErrCap      0x1D44    //
-#define idLoginChkErrTxt      0x1D45    //
-#define idSetPSWDCap1         0x1D46    //
-#define idSetPSWDCap2         0x1D47    //
-#define idSetPSWDCFM          0x1D48    //
-#define idSetPSWDCFM1         0x1D49    //
-#define idSetPSWDCFM2         0x1D4A    //
-#define idSetPSWDOk           0x1D4B    //
-#define idSetPSWDOk1          0x1D4C    //
-#define idSetPSWDOk2          0x1D4D    //
-#define idSetPSWDOk3          0x1D4E    //
-
-// 事件列表窗体
-#define idDateTimeFormat      0x1D50    //
-#define idEventEmpty          0x1D51    //
-#define idEvtDataEmpty        0x1D52    //
+#define idLoginCap1           0x1940    //
+#define idLoginCap2           0x1941    //
+#define idLoginCap3           0x1942    //
+#define idLoginApply          0x1943    //
+#define idLoginChkErrCap      0x1944    //
+#define idLoginChkErrTxt      0x1945    //
+#define idSetPSWDCap1         0x1946    //
+#define idSetPSWDCap2         0x1947    //
+#define idSetPSWDCFM          0x1948    //
+#define idSetPSWDCFM1         0x1949    //
+#define idSetPSWDCFM2         0x194A    //
+#define idSetPSWDOk           0x194B    //
+#define idSetPSWDOk1          0x194C    //
+#define idSetPSWDOk2          0x194D    //
+#define idSetPSWDOk3          0x194E    //
 
 //// 切换运行区窗体
-//#define idSSFmCurBlock        0x1D60    //
-//#define idSSFmCaption1        0x1D61    //
-//#define idSSFmCaption2        0x1D62    //
-//#define idSSFmCaption3        0x1D63    //
-//#define idSSFmCaption4        0x1D64    //
-//#define idSSDestIsCur         0x1D65    //
-//#define idSSSwtAtvHldOk       0x1D66    //
-//#define idSSSwtAtvHldErr      0x1D67    //
-//#define idSSSwtEdtHldErr      0x1D68    //
-//#define idSSSwtCpyHldOk       0x1D69    //
-//#define idSSSwtCpyHldErr      0x1D6A    //
+//#define idSSFmCurBlock        0x1960    //
+//#define idSSFmCaption1        0x1961    //
+//#define idSSFmCaption2        0x1962    //
+//#define idSSFmCaption3        0x1963    //
+//#define idSSFmCaption4        0x1964    //
+//#define idSSDestIsCur         0x1965    //
+//#define idSSSwtAtvHldOk       0x1966    //
+//#define idSSSwtAtvHldErr      0x1967    //
+//#define idSSSwtEdtHldErr      0x1968    //
+//#define idSSSwtCpyHldOk       0x1969    //
+//#define idSSSwtCpyHldErr      0x196A    //
 
 //// 恢复默认定值
-//#define idSetModifiedCap      0x1D70    //
-//#define idSetModifiedLbl      0x1D71    //
-//#define idSetSavedOk          0x1D72    //
+//#define idSetModifiedCap      0x1970    //
+//#define idSetModifiedLbl      0x1971    //
+//#define idSetSavedOk          0x1972    //
 
 // 配置日期时间
-#define idSetDateTimeCap      0x1D80    //
-#define idSetClockOk          0x1D81    //
+#define idSetDateTimeCap      0x1980    //
+#define idSetClockOk          0x1981    //
 
 //// 手动分合
-//#define idManuCtrlOp0         0x1D90
-//#define idManuCtrlOp1         0x1D91
-//#define idManuCtrlInf0a       0x1D92
-//#define idManuCtrlInf0b       0x1D93
-//#define idManuCtrlInf1        0x1D94
-//#define idManuCtrlInf2        0x1D95
-//#define idManuCtrlInf3        0x1D96
+//#define idManuCtrlOp0         0x1990
+//#define idManuCtrlOp1         0x1991
+//#define idManuCtrlInf0a       0x1992
+//#define idManuCtrlInf0b       0x1993
+//#define idManuCtrlInf1        0x1994
+//#define idManuCtrlInf2        0x1995
+//#define idManuCtrlInf3        0x1996
 
 //// 校准提示
-//#define idACCalibHint         0x1DA0    //
-//#define idDCCalibHint0        0x1DA1    //
-//#define idDCCalibHint1        0x1DA2    //
-//#define idCalibCap            0x1DA8    //
-//#define idCalibOk             0x1DA9    //
-//#define idCalibSomeOk         0x1DAA    //
-//#define idCalibFailed         0x1DAB    //
-//#define idMeaAdjFailed        0x1DAC    //
+//#define idACCalibHint         0x19A0    //
+//#define idDCCalibHint0        0x19A1    //
+//#define idDCCalibHint1        0x19A2    //
+//#define idCalibCap            0x19A8    //
+//#define idCalibOk             0x19A9    //
+//#define idCalibSomeOk         0x19AA    //
+//#define idCalibFailed         0x19AB    //
+//#define idMeaAdjFailed        0x19AC    //
 
 // 枚举提示
-#define idEnumChanged         0x1DB1    //
-#define idEnumChgRst          0x1DB2    //
+#define idEnumChanged         0x19B1    //
+#define idEnumChgRst          0x19B2    //
+
+
+// 事件列表窗体
+#define idEventCatalog1       0x1A01
+#define idEventCatalog2       0x1A01
+#define idEventCatalog3       0x1A01
+
+#define idDateTimeFormat      0x1A10    //
+#define idEventEmpty          0x1A11    //
+#define idEvtDataEmpty        0x1A12    //
 
 // 设备配置
 #define idDevOptName01        0x2000    //

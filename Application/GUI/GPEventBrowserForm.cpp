@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 /*
  File        : GPEventBrowserForm.cpp
@@ -14,7 +14,7 @@
 #include "GPEventBrowserForm.h"
 
 #include "GUI.h"
-#include "GForm.h"
+#include "GFormCentra.h"
 #include "GUICntr.h" // MCU: FGUIState, osWaitForever
 #include "GUIConf.h"
 //#include "FontCHS24LTH.h"
@@ -37,7 +37,7 @@
 #include <DevTypes.h>
 #include <GUI_Type.h>
 #include "GWinTypes.h"
-#include "GFormRegistrar.h"
+#include "GFormCentraRegistrar.h"
 //=============================================================================
 // 
 //-----------------------------------------------------------------------------
@@ -189,15 +189,15 @@ static void drawCaptionLabel()
   switch( (TEventLogType)(FpFormState->ucType) )
     {
     case mltEvent:
-      uCaplabelId = idMenuName1_1;
+      uCaplabelId = idEventCatalog1;
       crCaplabel  = crCaptionLabel1;
       break;
     case mltAlarm:
-      uCaplabelId = idMenuName1_2;
+      uCaplabelId = idEventCatalog2;
       crCaplabel  = crCaptionLabel1;
       break;
     case mltFault:
-      uCaplabelId = idMenuName1_3;
+      uCaplabelId = idEventCatalog3;
       crCaplabel  = crCaptionLabel1;
       break;
    default:
@@ -601,7 +601,7 @@ static void _OnKeyUp(uint16_t uwKey)
 
     switch (uwKey) {
     case KEY_ESCAPE:
-        gform::PopForm();
+        gfc::PopForm();
         break;
     }
 }
@@ -658,5 +658,5 @@ const GWinForm FEventBrowserForm =
 };
 
 // Auto-register with new GForm system
-static const gform::FormRegistrar kRegEvents(WID_EventListForm, &FEventBrowserForm, "EventBrowser");
+static const gfc::FormRegistrar kRegEvents(WID_EventListForm, &FEventBrowserForm, "EventBrowser");
 //-----------------------------------------------------------------------------

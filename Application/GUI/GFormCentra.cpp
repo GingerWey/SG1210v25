@@ -1,18 +1,18 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
- File        : GForm.cpp
+ File        : GFormCentra.cpp
  Version     : V1.01
  By          : Wey. Silver Grid
 
- Description : GForm system implementation.
+ Description : GFormCentra system implementation.
                Registry, navigation stack, message dispatch, Tick loop.
 
  Date        : 2026.06.24 (V1.00 — initial implementation)
               2026.06.25 (V1.01 — added TouchEvent for touch screen support)
 */
 //-----------------------------------------------------------------------------
-#include "GForm.h"
-#include "GFormPlatform.h"
+#include "GFormCentra.h"
+#include "GFormCentraPlatform.h"
 #include "GWinTypes.h"
 #include "GUIMessage.h"
 #include "GUI.h"
@@ -24,26 +24,26 @@
 //=============================================================================
 namespace {
 
-// ── Registry entry: pairs a FormId with its FormRecord ────────────────────
+// ── Registry entry: pairs a FormId with its FormRecord ───────────
 struct RegistryEntry {
-    gform::FormId       id;
-    gform::FormRecord   record;
+    gfc::FormId       id;
+    gfc::FormRecord   record;
 };
 
-// ── Registry: fixed-size array ────────────────────────────────────────────
-RegistryEntry  s_registry[gform::kMaxForms] = {};
+// ── Registry: fixed-size array ────────────────────────
+RegistryEntry  s_registry[gfc::kMaxForms] = {};
 size_t         s_registryCount = 0;
 
-// ── Navigation stack ──────────────────────────────────────────────────────
-gform::FormId  s_stack[gform::kMaxStack] = {};
+// ── Navigation stack ─────────────────────────────
+gfc::FormId  s_stack[gfc::kMaxStack] = {};
 size_t         s_stackTop = 0;       // Number of entries on stack
                                      // Current = s_stack[s_stackTop - 1]
 
-// ── Current form snapshot ─────────────────────────────────────────────────
-const gform::FormRecord* s_pCurrent  = nullptr;
-gform::FormId            s_currentId = kFormIdInvalid;
+// ── Current form snapshot ──────────────────────────
+const gfc::FormRecord* s_pCurrent  = nullptr;
+gfc::FormId            s_currentId = kFormIdInvalid;
 
-// ── Pending message queue (PostMsg / deferred delivery) ───────────────
+// ── Pending message queue (PostMsg / deferred delivery) ──────────
 constexpr size_t kMsgQueueSize = 16;
 struct PendingMsg {
     uint16_t    msgId;
@@ -56,13 +56,13 @@ size_t     s_msgHead = 0;
 size_t     s_msgTail = 0;
 
 // ── Platform mutex (lazy init — avoids static init order crash) ──────
-static gform::platform::Lock* s_plock = nullptr;
-static gform::platform::Lock& GetLock() {
-    if (!s_plock) s_plock = new gform::platform::Lock();
+static gfc::platform::Lock* s_plock = nullptr;
+static gfc::platform::Lock& GetLock() {
+    if (!s_plock) s_plock = new gfc::platform::Lock();
     return *s_plock;
 }
 
-// ── Init flag ─────────────────────────────────────────────────────────────
+// ── Init flag ─────────────────────────────────
 bool s_initialized = false;
 
 //=============================================================================
@@ -70,7 +70,7 @@ bool s_initialized = false;
 //=============================================================================
 
 /// Find a registry entry by FormId. Returns index or -1.
-int FindRegIdx(gform::FormId id)
+int FindRegIdx(gfc::FormId id)
 {
     for (size_t i = 0; i < s_registryCount; ++i) {
         if (s_registry[i].record.callbacks != nullptr &&
@@ -94,12 +94,12 @@ int FindRegIdxByForm(const GWinForm* form)
 
 /// Activate a form: push onto stack, call pInit+pShow, update state.
 /// Called with lock held.
-bool ActivateForm(gform::FormId id, const gform::FormRecord* rec,
+bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
                   const void* para)
 {
     if (id == kFormIdInvalid || rec == nullptr || rec->callbacks == nullptr)
         return false;
-    if (s_stackTop >= gform::kMaxStack)
+    if (s_stackTop >= gfc::kMaxStack)
         return false;
 
     // Push onto stack
@@ -136,7 +136,7 @@ void DeactivateCurrent(const void* para)
 
     // Restore previous or clear
     if (s_stackTop > 0) {
-        gform::FormId prevId = s_stack[s_stackTop - 1];
+        gfc::FormId prevId = s_stack[s_stackTop - 1];
         int idx = FindRegIdx(prevId);
         if (idx >= 0) {
             s_pCurrent  = &s_registry[idx].record;
@@ -156,7 +156,7 @@ void DeactivateCurrent(const void* para)
 void ShowTop(const void* para)
 {
     if (s_stackTop > 0) {
-        gform::FormId topId = s_stack[s_stackTop - 1];
+        gfc::FormId topId = s_stack[s_stackTop - 1];
         int idx = FindRegIdx(topId);
         if (idx >= 0) {
             s_pCurrent  = &s_registry[idx].record;
@@ -174,9 +174,9 @@ void ShowTop(const void* para)
 // Public API — Lifecycle
 //=============================================================================
 
-void gform::Init()
+void gfc::Init()
 {
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     // NOTE: Do NOT clear the registry here. Forms register themselves
     // via FormRegistrar during static initialization (before main()),
@@ -197,14 +197,14 @@ void gform::Init()
     s_initialized = true;
 }
 
-void gform::Tick()
+void gfc::Tick()
 {
-    // ── Drain pending message queue ──────────────────────────────────────
+    // ── Drain pending message queue ─────────────────────
     PendingMsg pending;
     bool hasPending = false;
 
     {
-        gform::ScopedLock _(GetLock());
+        gfc::ScopedLock _(GetLock());
         if (s_msgHead != s_msgTail) {
             pending    = s_msgQueue[s_msgHead];
             s_msgHead  = (s_msgHead + 1) % kMsgQueueSize;
@@ -220,7 +220,7 @@ void gform::Tick()
         }
 
         {
-            gform::ScopedLock _(GetLock());
+            gfc::ScopedLock _(GetLock());
             if (s_msgHead != s_msgTail) {
                 pending    = s_msgQueue[s_msgHead];
                 s_msgHead  = (s_msgHead + 1) % kMsgQueueSize;
@@ -231,10 +231,10 @@ void gform::Tick()
         }
     }
 
-    // ── Deliver GM_TIMER_TICK to current form ────────────────────────────
+    // ── Deliver GM_TIMER_TICK to current form ────────────────
     const GWinForm* callbacks = nullptr;
     {
-        gform::ScopedLock _(GetLock());
+        gfc::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr) {
             callbacks = s_pCurrent->callbacks;
         }
@@ -249,7 +249,7 @@ void gform::Tick()
     }
 }
 
-size_t gform::Run()
+size_t gfc::Run()
 {
     return s_stackTop;
 }
@@ -258,11 +258,11 @@ size_t gform::Run()
 // Public API — Registration
 //=============================================================================
 
-void gform::RegisterForm(FormId id, const GWinForm* form, const char* name)
+void gfc::RegisterForm(FormId id, const GWinForm* form, const char* name)
 {
     if (form == nullptr) return;
 
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     // Check for overwrite (same GWinForm pointer)
     int existIdx = FindRegIdxByForm(form);
@@ -292,7 +292,7 @@ void gform::RegisterForm(FormId id, const GWinForm* form, const char* name)
     ++s_registryCount;
 }
 
-const gform::FormRecord* gform::FindForm(FormId id)
+const gfc::FormRecord* gfc::FindForm(FormId id)
 {
     int idx = FindRegIdx(id);
     if (idx >= 0) {
@@ -301,9 +301,9 @@ const gform::FormRecord* gform::FindForm(FormId id)
     return nullptr;
 }
 
-void gform::UnregisterForm(FormId id)
+void gfc::UnregisterForm(FormId id)
 {
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     int idx = FindRegIdx(id);
     if (idx < 0) return;
@@ -320,9 +320,9 @@ void gform::UnregisterForm(FormId id)
 // Public API — Navigation
 //=============================================================================
 
-void gform::OpenForm(FormId id, const void* para, FormTransition transition)
+void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
 {
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     switch (transition) {
 
@@ -399,9 +399,9 @@ void gform::OpenForm(FormId id, const void* para, FormTransition transition)
     }  // switch
 }
 
-void gform::CloseCurrentForm()
+void gfc::CloseCurrentForm()
 {
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     TGWVoidProc closeFn = nullptr;
     TGWVoidProc showFn  = nullptr;
@@ -433,7 +433,7 @@ void gform::CloseCurrentForm()
     if (showFn  != nullptr) showFn(nullptr);
 }
 
-gform::FormId gform::GetCurrentFormId()
+gfc::FormId gfc::GetCurrentFormId()
 {
     return s_currentId;
 }
@@ -442,24 +442,24 @@ gform::FormId gform::GetCurrentFormId()
 // Public API — Stack introspection
 //=============================================================================
 
-size_t gform::StackDepth()
+size_t gfc::StackDepth()
 {
     return s_stackTop;
 }
 
-bool gform::IsStackEmpty()
+bool gfc::IsStackEmpty()
 {
     return (s_stackTop == 0);
 }
 
-gform::FormId gform::GetStackForm(size_t depth)
+gfc::FormId gfc::GetStackForm(size_t depth)
 {
     if (depth >= s_stackTop) return kFormIdInvalid;
     // depth 0 = top = s_stack[s_stackTop - 1]
     return s_stack[s_stackTop - 1 - depth];
 }
 
-bool gform::IsFormOnStack(FormId id)
+bool gfc::IsFormOnStack(FormId id)
 {
     for (size_t i = 0; i < s_stackTop; ++i) {
         if (s_stack[i] == id) return true;
@@ -471,13 +471,13 @@ bool gform::IsFormOnStack(FormId id)
 // Public API — Messaging
 //=============================================================================
 
-void gform::SendMsg(uint16_t msgId, uint16_t param, int32_t value)
+void gfc::SendMsg(uint16_t msgId, uint16_t param, int32_t value)
 {
     TGWMsgProc  msgFn = nullptr;
     GM_MESSAGE  msg   = {};
 
     {
-        gform::ScopedLock _(GetLock());
+        gfc::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
@@ -491,13 +491,13 @@ void gform::SendMsg(uint16_t msgId, uint16_t param, int32_t value)
     }
 }
 
-void gform::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
+void gfc::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
 {
     TGWMsgProc  msgFn = nullptr;
     GM_MESSAGE  msg   = {};
 
     {
-        gform::ScopedLock _(GetLock());
+        gfc::ScopedLock _(GetLock());
         if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
@@ -511,9 +511,9 @@ void gform::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
     }
 }
 
-void gform::PostMsg(uint16_t msgId, uint16_t param, int32_t value)
+void gfc::PostMsg(uint16_t msgId, uint16_t param, int32_t value)
 {
-    gform::ScopedLock _(GetLock());
+    gfc::ScopedLock _(GetLock());
 
     size_t next = (s_msgTail + 1) % kMsgQueueSize;
     if (next == s_msgHead) return;  // Queue full, drop
@@ -525,14 +525,14 @@ void gform::PostMsg(uint16_t msgId, uint16_t param, int32_t value)
     s_msgTail = next;
 }
 
-void gform::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
+void gfc::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
 {
     // Snapshot stack indices under lock
     FormId  stackCopy[kMaxStack];
     size_t  stackLen = 0;
 
     {
-        gform::ScopedLock _(GetLock());
+        gfc::ScopedLock _(GetLock());
         stackLen = s_stackTop;
         for (size_t i = 0; i < s_stackTop; ++i) {
             stackCopy[i] = s_stack[i];
@@ -554,7 +554,7 @@ void gform::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
     }
 }
 
-void gform::KeyEvent(uint32_t key, uint32_t pressedCnt)
+void gfc::KeyEvent(uint32_t key, uint32_t pressedCnt)
 {
     if (key == 0) return;
 
@@ -575,7 +575,7 @@ void gform::KeyEvent(uint32_t key, uint32_t pressedCnt)
 // Touch event handling
 //=============================================================================
 #if GUI_SUPPORT_TOUCH
-void gform::TouchEvent(uint16_t action, uint16_t x, uint16_t y)
+void gfc::TouchEvent(uint16_t action, uint16_t x, uint16_t y)
 {
     // Pack coordinates: x in upper 16 bits, y in lower 16 bits
     int32_t packed = (static_cast<int32_t>(x) << 16) | static_cast<int32_t>(y);

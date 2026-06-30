@@ -1,4 +1,4 @@
-﻿//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 /*
   GUI Picture
 
@@ -12,6 +12,7 @@
 #include "GUIPicture.h"
 
 #include "GUIBitMap.h"
+#include "CSGDraw.h"
 
 #include "GUI.h"
 #include "../../../Application/GUI/CSGDraw.h"
@@ -19,7 +20,7 @@
 // Global methods
 //---------------------------------------------------------------------------
 // Draw Picture
-void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0, int picIndex)
+void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0, int picIndex, int saturation)
 {
 
   if( nullptr == pPic || nullptr == pPic->pData)
@@ -45,7 +46,7 @@ void GUI_DrawPicture(const TGUIPicture *pPic, int x0, int y0, int picIndex)
 
     case ID_CSG:
       {
-      CSG_DrawPicture(pPic, x0, y0, picIndex, 100);
+      CSG_DrawPicture(pPic, x0, y0, picIndex, saturation);
       break;
       }
 

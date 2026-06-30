@@ -263,10 +263,9 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
 
     // 4. Precompute transparent color in RGB565 (palette[0] → RGB565)
     uint16_t transpRgb565 = 0x0000;
-    bool hasTransparency = false;
-    if (crn > 0 && activePalette != nullptr) {
+    bool hasTransparency = (crn > 0 && activePalette != nullptr);
+    if (hasTransparency) {
         transpRgb565 = CrmToRgb565(activePalette, colorMode);
-        hasTransparency = true;
     }
 
     // 5. Allocate buffers: CRM output + bitmap (RGB565 for MCU, 32-bit for Sim)
@@ -290,7 +289,9 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
     void*    bmpBuf = GUI_ALLOC_h2p(hBmpBuf);
 
     // 6. Init streaming decoder
-    CSGDecoderState state;
+    //    Static allocation: CSGDecoderState contains an 8KB window[] → won't fit
+    //    on any RTOS task stack (HMITask=8KB).  Placed in .bss to avoid overflow.
+    static CSGDecoderState state;
     if (CsgDecodeInit(&state, &pic, outBuf, activePalette, outMode)
         != CSG_ErrCode::kOk) {
         GUI_ALLOC_Free(hOutBuf); GUI_ALLOC_Free(hBmpBuf);
@@ -309,51 +310,113 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
         if (decErr != CSG_ErrCode::kOk || n == 0) break;
 
 #ifdef __vmSIMULATOR__
-        // ---- Sim: CRM → 32-bit 0x00RRGGBB bitmap (GUICC_M8888I format) ----
-        uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
+        // ---- Sim: hybrid draw ----
+        //   Rows with transparent pixels: per-pixel draw, skip transparent.
+        //   Rows without transparent pixels: fast GUI_DrawBitmapExp.
         if (hasTransparency) {
             uint32_t transp32 = Rgb565ToSim(transpRgb565);
-            for (int i = 0; i < n; ++i) {
-                uint32_t c = Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode));
-                bmp32[i] = (c == transp32) ? 0x00000000 : c;
+            bool bHasTransp = false;
+            for (int i = 0; i < n && !bHasTransp; ++i) {
+                if (Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode)) == transp32)
+                    bHasTransp = true;
+            }
+            if (bHasTransp) {
+                // Slow path: per-pixel draw, skip transparent → background shows through
+                for (int i = 0; i < n; ++i) {
+                    uint16_t v565 = CrmToRgb565(outBuf + i * bpc, colorMode);
+                    if (v565 == transpRgb565) continue;  // skip transparent
+                    uint32_t c = Rgb565ToSim(v565);
+                    GUI_SetColor(c & 0x00FFFFFF);  // strip alpha, keep RGB
+                    GUI_DrawPixel(x0 + i, y0 + row);
+                }
+            } else {
+                // Fast path: no transparency in this row → bitmap draw
+                uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
+                if (doSat && crn == 0) {
+                    for (int i = 0; i < n; ++i)
+                        bmp32[i] = Rgb565ToSim(SaturateRgb565(CrmToRgb565(outBuf + i*bpc, colorMode), saturation));
+                } else {
+                    for (int i = 0; i < n; ++i)
+                        bmp32[i] = Rgb565ToSim(CrmToRgb565(outBuf + i*bpc, colorMode));
+                }
+                GUI_DrawBitmapExp(x0, y0 + row, n, 1, 1, 1, 32, n * 4,
+                                  static_cast<const U8*>(bmpBuf), nullptr);
             }
         } else if (doSat && crn == 0) {
+            uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
             for (int i = 0; i < n; ++i) {
                 bmp32[i] = Rgb565ToSim(SaturateRgb565(
                     CrmToRgb565(outBuf + i * bpc, colorMode), saturation));
             }
+            GUI_DrawBitmapExp(x0, y0 + row, n, 1, 1, 1, 32, n * 4,
+                              static_cast<const U8*>(bmpBuf), nullptr);
         } else {
+            uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
             for (int i = 0; i < n; ++i) {
                 bmp32[i] = Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode));
             }
+            GUI_DrawBitmapExp(x0, y0 + row, n, 1, 1, 1, 32, n * 4,
+                              static_cast<const U8*>(bmpBuf), nullptr);
         }
-        GUI_DrawBitmapExp(x0, y0 + row, n, 1, 1, 1,
-                          32, n * 4,
-                          static_cast<const U8*>(bmpBuf), nullptr);
 #else
-        // ---- MCU: CRM → RGB565 bitmap ----
-        uint16_t* bmp16 = static_cast<uint16_t*>(bmpBuf);
+        // ---- MCU: CRM → RGB565 ----
+        // Only for **RGB565 CSG!
+        //   Rows with transparent pixels: per-pixel write, skip transparent.
+        //   Rows without transparent pixels: fast burst write entire row.
+
+        const uint16_t* puwPixels = (uint16_t*)(outBuf);
         if (hasTransparency) {
-            for (int i = 0; i < n; ++i) {
-                const uint8_t* crm = outBuf + i * bpc;
-                uint16_t v = CrmToRgb565(crm, colorMode);
-                bmp16[i] = (v == transpRgb565) ? 0x0000 : v;
+            // Scan for transparent pixels in this row
+            bool bHasTransp = false;
+            for (int i = 0; i < n && !bHasTransp; ++i) {
+                //if (CrmToRgb565(outBuf + i * bpc, colorMode) == transpRgb565)
+                if( puwPixels[i] == transpRgb565 )
+                    bHasTransp = true;
+            }
+            
+            if (bHasTransp) {
+                // Per-pixel: set cursor per opaque pixel, skip transparent
+                U32 bNeedCursor = 1;
+                for (int i = 0; i < n; ++i) {
+                    //uint16_t v = CrmToRgb565(outBuf + i * bpc, colorMode);
+                  
+                    U16 uwColor = *puwPixels++;
+                    if (uwColor == transpRgb565) {
+                      bNeedCursor = 1;
+                      continue;
+                    }
+                    
+                    if( bNeedCursor ) {
+                      bNeedCursor = 0;
+                      LCD_SetCursor(x0 + i, y0 + row);
+                    }
+                    
+                    LCD_DATADDR = uwColor;
+                    
+//                    LCD_WRAM_Prepare();
+//                    *lcd = v;
+                }
+            } else {
+                // Fast path: no transparent pixels in this row
+                LCD_SetCursor(x0, y0 + row);
+                //LCD_WRAM_Prepare();
+                for (int i = 0; i < n; ++i) {
+                    LCD_DATADDR = *puwPixels++; //CrmToRgb565(outBuf + i * bpc, colorMode);
+                }
             }
         } else if (doSat && crn == 0) {
+            LCD_SetCursor(x0, y0 + row);
+            //LCD_WRAM_Prepare();
             for (int i = 0; i < n; ++i) {
-                bmp16[i] = SaturateRgb565(CrmToRgb565(outBuf + i * bpc, colorMode), saturation);
+                //LCD_DATADDR = SaturateRgb565(CrmToRgb565(outBuf + i * bpc, colorMode), saturation);
+              LCD_DATADDR = SaturateRgb565(*puwPixels++, saturation);
             }
         } else {
+            LCD_SetCursor(x0, y0 + row);
+            //LCD_WRAM_Prepare();
             for (int i = 0; i < n; ++i) {
-                bmp16[i] = CrmToRgb565(outBuf + i * bpc, colorMode);
+                LCD_DATADDR = *puwPixels++; //CrmToRgb565(outBuf + i * bpc, colorMode);
             }
-        }
-        // MCU: set cursor once, then burst-write entire row to LCD via FSMC
-        LCD_SetCursor(x0, y0 + row);
-        LCD_WRAM_Prepare();
-        volatile uint16_t* lcd = (volatile uint16_t*)0x60000000;
-        for (int i = 0; i < n; ++i) {
-            *lcd = bmp16[i];
         }
 #endif
         ++row;

@@ -1,18 +1,18 @@
 ﻿//-----------------------------------------------------------------------------
 /*
- File        : GFormRegistrar.h
+ File        : GFormCentraRegistrar.h
  Version     : V1.00
  By          : Wey. Silver Grid
 
  Description : RAII form registrar for automatic form registration.
                Place a static instance in each form's .cpp file:
-                 static const gform::FormRegistrar kReg(WID_FOO, &FFooForm, "Foo");
+                 static const gfc::FormRegistrar kReg(WID_FOO, &FFooForm, "Foo");
 
  Date        : 2026.06.24
 */
 //-----------------------------------------------------------------------------
-#ifndef GUI_GFORM_REGISTRAR_H
-#define GUI_GFORM_REGISTRAR_H
+#ifndef GUI_GFC_REGISTRAR_H
+#define GUI_GFC_REGISTRAR_H
 
 #include <cstdint>
 
@@ -20,7 +20,7 @@
 #include "GWinTypes.h"
 
 //-----------------------------------------------------------------------------
-namespace gform {
+namespace gfc {
 
 using FormId = uint16_t;
 
@@ -38,7 +38,7 @@ public:
     }
 };
 
-}  // namespace gform
+}  // namespace gfc
 
 //-----------------------------------------------------------------------------
-#endif  // GUI_GFORM_REGISTRAR_H
+#endif  // GUI_GFC_REGISTRAR_H

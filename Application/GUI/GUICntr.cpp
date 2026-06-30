@@ -7,9 +7,9 @@
 
  Description : GUI controller - adapter layer delegating to the new GForm system.
                Keeps backward compatibility for existing form code while
-               all internals are handled by gform::.
+               all internals are handled by gfc::.
 
-               DEPRECATED: New code should use GForm.h directly.
+               DEPRECATED: New code should use GFormCentra.h directly.
                This file will be removed in a future cleanup phase.
 
  Date       : 2026.06.25 (v2.01 — added touch polling support)
@@ -20,8 +20,8 @@
 #include "GUICntr.h"
 
 //  New GForm system 
-#include "GForm.h"
-#include "GFormPlatform.h"
+#include "GFormCentra.h"
+#include "GFormCentraPlatform.h"
 
 #ifndef __vmSIMULATOR__
  #include "IndLed.h"
@@ -84,7 +84,7 @@ volatile TGUIState FGUIState;
 #endif
 
 //=============================================================================
-// Form registration list  registers all known forms into gform::
+// Form registration list  registers all known forms into gfc::
 //-----------------------------------------------------------------------------
 // Each entry maps a window ID to its GWinForm.
 // FormRegistrar auto-registration (Phase 2) will make this obsolete.
@@ -134,8 +134,8 @@ static void RegisterAllForms()
     // Sim-compatible forms (always available)
     for (size_t i = 0; i < kNumSimForms; ++i) {
         if (s_formTableSim[i].form != nullptr) {
-            gform::RegisterForm(
-                static_cast<gform::FormId>(s_formTableSim[i].id),
+            gfc::RegisterForm(
+                static_cast<gfc::FormId>(s_formTableSim[i].id),
                 s_formTableSim[i].form,
                 s_formTableSim[i].name
             );
@@ -145,8 +145,8 @@ static void RegisterAllForms()
     // MCU-only forms (require FreeRTOS / STM32 HAL)
     for (size_t i = 0; i < kNumMcuForms; ++i) {
         if (s_formTableMcu[i].form != nullptr) {
-            gform::RegisterForm(
-                static_cast<gform::FormId>(s_formTableMcu[i].id),
+            gfc::RegisterForm(
+                static_cast<gfc::FormId>(s_formTableMcu[i].id),
                 s_formTableMcu[i].form,
                 s_formTableMcu[i].name
             );
@@ -156,7 +156,7 @@ static void RegisterAllForms()
 }
 
 //=============================================================================
-// Adapter: GUITick  delegate to gform::Tick
+// Adapter: GUITick  delegate to gfc::Tick
 //=============================================================================
 void GUITick(void)
 {
@@ -183,20 +183,20 @@ void GUITick(void)
         if (GUI_TOUCH_GetState(&state)) {
             if (!s_hadTouch) {
                 // First reading: treat as touch down
-                gform::TouchEvent(TOUCH_DOWN,
+                gfc::TouchEvent(TOUCH_DOWN,
                                   static_cast<uint16_t>(state.x),
                                   static_cast<uint16_t>(state.y));
                 FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
             } else if (state.Pressed != s_lastState.Pressed) {
                 // Pressed state changed
-                gform::TouchEvent(state.Pressed ? TOUCH_DOWN : TOUCH_UP,
+                gfc::TouchEvent(state.Pressed ? TOUCH_DOWN : TOUCH_UP,
                                   static_cast<uint16_t>(state.x),
                                   static_cast<uint16_t>(state.y));
                 FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
             } else if (state.Pressed &&
                        (state.x != s_lastState.x || state.y != s_lastState.y)) {
                 // Position changed while pressed
-                gform::TouchEvent(TOUCH_MOVE,
+                gfc::TouchEvent(TOUCH_MOVE,
                                   static_cast<uint16_t>(state.x),
                                   static_cast<uint16_t>(state.y));
                 FGUIState.uKeyIdle = GUI_GetTime() + TIME_MS_LCDBG;
@@ -206,7 +206,7 @@ void GUITick(void)
         } else {
             // Touch lost (finger lifted completely)
             if (s_hadTouch && s_lastState.Pressed) {
-                gform::TouchEvent(TOUCH_UP,
+                gfc::TouchEvent(TOUCH_UP,
                                   static_cast<uint16_t>(s_lastState.x),
                                   static_cast<uint16_t>(s_lastState.y));
             }
@@ -228,10 +228,10 @@ void GUITick(void)
         ((uint32_t)GUI_GetTime() > FGUIState.uKeyIdle)) {
         FGUIState.uKeyIdle = 0;
 #ifndef __vmSIMULATOR__
-        INDLED_LCDBG(0);
+        // INDLED_LCDBG(0);
 #endif
         // Switch to main if we're not already there
-        if (gform::GetCurrentFormId() != WID_MainForm) {
+        if (gfc::GetCurrentFormId() != WID_MainForm) {
             needSwitchToMain = true;
         }
     }
@@ -243,11 +243,11 @@ void GUITick(void)
 #endif
 
     if (needSwitchToMain) {
-        gform::ReplaceForm(WID_MainForm, nullptr);
+        gfc::ReplaceForm(WID_MainForm, nullptr);
     }
 
     //  Delegate tick to GForm system 
-    gform::Tick();
+    gfc::Tick();
 }
 
 //=============================================================================
@@ -264,13 +264,15 @@ void GUIStart()
 #endif
 
     // Init emWin
-    GUI_Init();
 #ifdef __vmSIMULATOR__
     WM_MULTIBUF_Enable(1);
 #endif
+    GUI_Init();
 
     GUI_SetBkColor(GUI_BLACK);
     GUI_Clear();
+  
+  INDLED_LCDBG( 1 );
 
 #ifndef __vmSIMULATOR__
 #if osCMSIS >= 0x20000U
@@ -281,18 +283,18 @@ void GUIStart()
 #endif
 
     //  Initialize the new GForm system 
-    gform::Init();
+    gfc::Init();
 
     //  Register all forms 
     RegisterAllForms();
 
     //  Decide initial form 
 #ifndef __vmSIMULATOR__
-    if (0 != GetRSTSrc(RRS_PORRST) && 0 == GetRSTSrc(RRS_IWDGRST)) {
-        gform::PushForm(WID_SplashForm, nullptr);
-    } else {
-        gform::PushForm(WID_MainForm, nullptr);
-    }
+//    if (0 != GetRSTSrc(RRS_PORRST) && 0 == GetRSTSrc(RRS_IWDGRST)) {
+        gfc::PushForm(WID_SplashForm, nullptr);
+//    } else {
+//        gfc::PushForm(WID_MainForm, nullptr);
+//    }
 
     if (0 == GetRSTSrc(RRS_IWDGRST)) {
         INDLED_LCDBG(1);
@@ -307,7 +309,7 @@ void GUIStart()
     if (GetRSTSrc(RRS_LPWRRST) != 0)  FGUIState.uStartupTime |= 16;
 #else
     // Simulator always starts with splash
-    gform::PushForm(WID_SplashForm, nullptr);
+    gfc::PushForm(WID_SplashForm, nullptr);
 #endif
 
     FGUIState.ucGUIOk = GUI_OK;
@@ -351,7 +353,7 @@ bool GUIFormOpen(uint32_t uFormId, const void* para)
     size_t idx = uFormId - WID_FORMBEGIN;
     if (idx >= 15) return false;  // 15 total registered forms (4 Sim + 11 MCU)
 
-    gform::PushForm(static_cast<gform::FormId>(uFormId), para);
+    gfc::PushForm(static_cast<gfc::FormId>(uFormId), para);
     return true;
 }
 
@@ -361,11 +363,11 @@ bool GUIFormOpen(uint32_t uFormId, const void* para)
 bool GUIFormClose(const void* para)
 {
     (void)para;
-    gform::PopForm();
+    gfc::PopForm();
 
     // If stack is now empty, open MainForm as fallback
-    if (gform::IsStackEmpty()) {
-        gform::PushForm(WID_MainForm, nullptr);
+    if (gfc::IsStackEmpty()) {
+        gfc::PushForm(WID_MainForm, nullptr);
     }
     return true;
 }
@@ -375,7 +377,7 @@ bool GUIFormClose(const void* para)
 //=============================================================================
 void GUISendMessage(uint32_t uMsgIdent, uint32_t uParam, uint32_t uData)
 {
-    gform::SendMsg(
+    gfc::SendMsg(
         static_cast<uint16_t>(uMsgIdent),
         static_cast<uint16_t>(uParam),
         static_cast<int32_t>(uData)
@@ -387,7 +389,7 @@ void GUISendMessage(uint32_t uMsgIdent, uint32_t uParam, uint32_t uData)
 //=============================================================================
 void GUIModeChanged(void)
 {
-    gform::ReplaceForm(WID_SplashForm, nullptr);
+    gfc::ReplaceForm(WID_SplashForm, nullptr);
 }
 
 //=============================================================================
@@ -396,7 +398,7 @@ void GUIModeChanged(void)
 #ifdef __vmSIMULATOR__
 void GUIKeyEnevt(uint32_t uKey, uint32_t uPressedCnt)
 {
-    gform::KeyEvent(uKey, uPressedCnt);
+    gfc::KeyEvent(uKey, uPressedCnt);
 }
 #endif
 
@@ -444,12 +446,12 @@ void KEYDB_OnChanged(const TKeyState& key)
         uMsgId = 0;
 
     if (0 != uMsgId) {
-        gform::SendMsg(
+        gfc::SendMsg(
             static_cast<uint16_t>(uMsgId),
             key.ucKey,
             key.uwPressCnt
         );
-    } else if (gform::GetCurrentFormId() == WID_CONSOLE && 0 == key.ucState) {
+    } else if (gfc::GetCurrentFormId() == WID_CONSOLE && 0 == key.ucState) {
         GUIFormClose(nullptr);
         GUIFormOpen(WID_MainForm, nullptr);
     }

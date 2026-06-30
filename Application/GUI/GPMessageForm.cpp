@@ -136,7 +136,7 @@ static void _FlushForm()
   GUI_RECT Rect1 = { CapLabel_x1, CapLabel_y1, CapLabel_x2, CapLabel_y2 };
   GUI_DrawRectEx( &Rect1 );
 
-  const char* pStr = GetMultiLangString( idDevFuncSUTC );
+  const char* pStr = GetMultiLangString( idDevFuncUVTC );
   if( nullptr != pStr )
     {
     GUI_SetColor( crCaptionFont );

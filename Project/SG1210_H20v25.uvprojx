@@ -790,11 +790,6 @@
               <FilePath>..\Application\System\DevRegs.cpp</FilePath>
             </File>
             <File>
-              <FileName>FuncSUTC.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\System\FuncSUTC.cpp</FilePath>
-            </File>
-            <File>
               <FileName>TextStrs.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Application\System\Strings\TextStrs.cpp</FilePath>
@@ -849,6 +844,11 @@
                   </Cads>
                 </FileArmAds>
               </FileOption>
+            </File>
+            <File>
+              <FileName>FuncUVTC.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\System\FuncUVTC.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -911,15 +911,45 @@
               <FilePath>..\Application\GUI\GUICntr.cpp</FilePath>
             </File>
             <File>
-              <FileName>GForm.cpp</FileName>
+              <FileName>GFormCentra.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\GFormCentra.cpp</FilePath>
             </File>
             <File>
               <FileName>GUIEditors.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Application\GUI\GUIEditors.cpp</FilePath>
             </File>
+            <File>
+              <FileName>GUIMisc.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\GUIMisc.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GUIBitmap.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Middlewares\emWin\user\GUIBitmap.h</FilePath>
+            </File>
+            <File>
+              <FileName>GUIBitmap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\emWin\user\GUIBitmap.c</FilePath>
+            </File>
+            <File>
+              <FileName>GUIPicture.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Middlewares\emWin\user\GUIPicture.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>PictureRes.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\PictureRes.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>GUI/Form</GroupName>
+          <Files>
             <File>
               <FileName>GPSplashForm.cpp</FileName>
               <FileType>8</FileType>
@@ -1007,14 +1037,14 @@
               <FilePath>..\Application\GUI\GPLoginDialog.cpp</FilePath>
             </File>
             <File>
-              <FileName>GPMessageForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GPMessageForm.cpp</FilePath>
-            </File>
-            <File>
               <FileName>GPTimeDialog.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Application\GUI\GPTimeDialog.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GPMessageForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\GPMessageForm.cpp</FilePath>
             </File>
             <File>
               <FileName>GUICtrlConfigDialog.cpp</FileName>
@@ -1027,19 +1057,9 @@
               <FilePath>..\Application\GUI\GUIUARTConfigDialog.cpp</FilePath>
             </File>
             <File>
-              <FileName>GUIMisc.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GUIMisc.cpp</FilePath>
-            </File>
-            <File>
               <FileName>GPFatalForm.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Application\GUI\GPFatalForm.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>PictureRes.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\PictureRes.cpp</FilePath>
             </File>
           </Files>
         </Group>
@@ -1355,24 +1375,9 @@
           <GroupName>emWin</GroupName>
           <Files>
             <File>
-              <FileName>GUIBitmap.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Middlewares\emWin\user\GUIBitmap.c</FilePath>
-            </File>
-            <File>
-              <FileName>GUIBitmap.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Middlewares\emWin\user\GUIBitmap.h</FilePath>
-            </File>
-            <File>
               <FileName>GUI_X_FreeRTOS.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Middlewares\emWin\user\GUI_X_FreeRTOS.c</FilePath>
-            </File>
-            <File>
-              <FileName>GUIPicture.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Middlewares\emWin\user\GUIPicture.cpp</FilePath>
             </File>
             <File>
               <FileName>GUIConf.c</FileName>

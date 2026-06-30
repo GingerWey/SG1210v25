@@ -20,7 +20,7 @@
 #include "DevDebug.h"
 
 
-#include "FuncSUTC.h"
+#include "FuncUVTC.h"
 
 #if METERING_EN > 0
   #include "Cumulant.h"
@@ -59,7 +59,7 @@
   #define NUM_FUNC_INTFs              NUM_Elements(FuncInterface)
 
 #else
-  #define FuncInterface   dfiFuncSUTC
+  #define FuncInterface   dfiFuncUVTC
 #endif
 //=============================================================================
 // 全局方法

@@ -2,378 +2,331 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPSplashForm.cpp
- Version     : V1.15
+ Version     : V2.00
  By          : Wey. Silver Grid
 
- Description : Splash form — CSG decoder test rig.
-               Cycles 14 images (11 atlas + 3 320x240 backgrounds) × 6 sat levels.
-               B key toggles bgOnly.  Logs memory + decode/draw elapsed time (us).
+ Description : Splash form. Displays device branding, auto-transitions to
+               GMainForm after timeout or user interaction.
+               Per SG1210v21 form design spec section I.
 
- Date        : 2026.06.26 (V1.15 — added microsecond timing to perf log)
-              2026.06.26 (V1.13 — saturation test: 100/80/60/40/20/10% cycle)
-              2026.06.26 (V1.12 — ImageRes cycle test + memory leak detection)
-              2023.12.05 (V1.10 — original implementation)
+   Layer0: Full-screen background (picbkg320x240Lcsg)
+   Layer1: Device model, Chinese/English names, copyright overlay
+
+   Behaviour:
+     - Created by GUIStart on power-up, or via ESC from GMainForm
+     - Auto-exits to GMainForm after 60s idle
+     - Any key press or touch click immediately exits
+
+ Date        : 2026.06.29 (V2.00 - rewritten per form design spec)
+              2026.06.26 (V1.15 - CSG decoder test rig, removed)
 */
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 #include "GPSplashForm.h"
 
 #include "GUI.h"
-#include "WM.h"
-#include "GUI_Private.h"
-#include "GWinTypes.h"
-
-#include "GForm.h"
-#include "GUICntr.h"
-#include "GUIConf.h"
-#include "GUIMisc.h"
+#include "GFormCentra.h"
 #include "GUIMessage.h"
-#include "FontSGRes.h"
+#include "GWinTypes.h"
+#include "GFormCentraRegistrar.h"
 
+#include "FontSGRes.h"
 #include "GUIPicture.h"
 #include "PictureRes.h"
 #include "Graphics/ImageRes.h"
 #include "Strings/TextStrs.h"
-#include "CSGDraw.h"
 
-#include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include "GFormRegistrar.h"
 #include <GUI_Type.h>
 
-#ifdef __vmSIMULATOR__
-#include <windows.h>
-#endif
+//=============================================================================
+// Layout constants - per spec section I.1.2
+// Coordinate format (x, y, w, h), top-left origin.
+// Converted to emWin (x0,y0,x1,y1) via: x1=x+w-1, y1=y+h-1
+//=============================================================================
+
+// Background
+#define SP_BKG_X          0
+#define SP_BKG_Y          0
+
+// Device model label - e.g. "SG1210"
+#define SP_MODEL_X         10
+#define SP_MODEL_Y         64
+#define SP_MODEL_W         300
+#define SP_MODEL_H         24
+#define SP_MODEL_FONT      GUI_FONT_24LTH_CHN
+#define SP_MODEL_COLOR     0x00B5F2
+#define SP_MODEL_ALIGN     (GUI_TA_HCENTER | GUI_TA_VCENTER)
+#define SP_MODEL_TEXT      idGPDevFamiry
+
+// Device function name - Chinese (multi-lang)
+#define SP_NAME_X          10
+#define SP_NAME_Y          102
+#define SP_NAME_W          300
+#define SP_NAME_H          24
+#define SP_NAME_FONT       GUI_FONT_24LTH_CHN
+#define SP_NAME_COLOR      0x00B5F2
+#define SP_NAME_ALIGN      (GUI_TA_HCENTER | GUI_TA_VCENTER)
+#define SP_NAME_TEXT       idDevFuncUVTC
+
+// Device function name - English (static)
+#define SP_ENG_X           10
+#define SP_ENG_Y           128
+#define SP_ENG_W           300
+#define SP_ENG_H           17
+#define SP_ENG_FONT        GUI_FONT_AA4_ASCII16B
+#define SP_ENG_COLOR       0x00B5F2
+#define SP_ENG_ALIGN       (GUI_TA_HCENTER | GUI_TA_VCENTER)
+#define SP_ENG_TEXT        "Undervoltage Trip Controller"
+
+// Copyright line
+#define SP_COPY_X          10
+#define SP_COPY_Y          221
+#define SP_COPY_W          300
+#define SP_COPY_H          17
+#define SP_COPY_FONT       GUI_FONT_AA4_ASCII16B
+#define SP_COPY_COLOR      0x00B5F2
+#define SP_COPY_ALIGN      (GUI_TA_HCENTER | GUI_TA_VCENTER)
+
+// Timeout
+#define SP_TIMEOUT_MS      60000     // 60 seconds idle timeout
 
 //=============================================================================
-// Image metadata for the cycle display
-//-----------------------------------------------------------------------------
-static const struct {
-    const TGUIPicture* pPic;       // CSG picture pointer (atlas or standalone)
-    int         picIndex;          // sub-picture index within atlas, or 0 for standalone
-    const char* name;
-    int         w, h;
-    const char* casName;
-    bool        skipSat;           // true = no saturation test (always 100%)
-} kImageList[] = {
-    // Atlas sub-pictures (picMAImageRescsg)
-    {&picMAImageRescsg, picIdxMA_Logo78x18,       "Logo78x18",      78, 19, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_ACPow32x59Cyan,  "ACPow32x59Cyan", 32, 59, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Ctrl78x61Cyan,   "Ctrl78x61Cyan",  78, 61, "DEFLATE",  false},
-    {&picMAImageRescsg, picIdxMA_Brkr56x60Cyan,   "Brkr59x60Cyan",  59, 60, "DEFLATE",  false},
-    {&picMAImageRescsg, picIdxMA_Battey44x24C1,   "Battey44x24C1",  44, 24, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Battey44x24C2,   "Battey44x24C2",  44, 24, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Battey44x24C3,   "Battey44x24C3",  44, 24, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Battey44x24C4,   "Battey44x24C4",  44, 24, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Battey44x24C5,   "Battey44x24C5",  44, 24, "MiniLZ77", false},
-    {&picMAImageRescsg, picIdxMA_Fan16x16Cyan,    "Fan16x16Cyan",   16, 16, "RLE",      false},
-    {&picMAImageRescsg, picIdxMA_Fire16x16,       "Fire16x16",      16, 16, "RLE",      false},
-    // Standalone background images (no saturation test)
-    {&picbkg320x240Rcsg,  0, "bkg320x240R", 320, 240, "RLE",     true},
-    { &picbkg320x240Lcsg, 0, "bkg320x240L", 320, 240, "MiniLZ77", true },
-};
-static constexpr int kBgFirstIdx = 11;  // first background index
-static constexpr int kBgLastIdx  = 12;  // last background index
-static constexpr int kImageCount = sizeof(kImageList) / sizeof(kImageList[0]);
+// Form state
+//=============================================================================
+typedef struct tagSplashState {
+  uint32_t uStartTime;    // GUI_GetTime() at form entry (ms)
+  bool     bTimedOut;     // True once timeout has fired
+} TSplashState;
 
-// Saturation test levels (percent)
-static constexpr int kSatLevels[] = {100, 80, 60, 40, 20, 10};
-static constexpr int kSatCount   = sizeof(kSatLevels) / sizeof(kSatLevels[0]);
+static TSplashState m_State;
 
 //=============================================================================
-// Timing helpers
-//-----------------------------------------------------------------------------
-#ifdef __vmSIMULATOR__
-static LARGE_INTEGER s_freq;
-static bool s_freqOk = false;
-
-static long long GetTimeUs() {
-    if (!s_freqOk) {
-        QueryPerformanceFrequency(&s_freq);
-        s_freqOk = true;
-    }
-    LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    return (now.QuadPart * 1000000LL) / s_freq.QuadPart;
-}
-#else
-static long long GetTimeUs() {
-    return static_cast<long long>(GUI_GetTime()) * 1000LL;  // ms → us (coarse)
-}
-#endif
-
+// Helper: convert (x,y,w,h) to emWin GUI_RECT (inclusive x0,y0,x1,y1)
 //=============================================================================
-// Memory tracking
-//-----------------------------------------------------------------------------
-static int  s_memBaselineFree  = 0;   // free bytes after _Show initial draw
-static int  s_memMaxUsed       = 0;   // peak used bytes across all draws
-static long s_drawCount        = 0;
-
-static void MemLog(const char* label) {
-#ifdef __vmSIMULATOR__
-    int freeBytes = (int)GUI_ALLOC_GetNumFreeBytes();
-    int usedBytes = (int)GUI_ALLOC_GetNumUsedBytes();
-    int maxUsed   = (int)GUI_ALLOC_GetMaxUsedBytes();
-    if (maxUsed > s_memMaxUsed) s_memMaxUsed = maxUsed;
-
-    if (s_memBaselineFree == 0) s_memBaselineFree = freeBytes;
-
-    const char* tmp = getenv("TEMP"); if (!tmp) tmp = ".";
-    char path[256];
-    sprintf(path, "%s\\sg1210_mem_log.txt", tmp);
-    FILE* f = fopen(path, "a");
-    if (f) {
-        int delta = freeBytes - s_memBaselineFree;
-        fprintf(f, "[%3ld] %-20s  free=%6d  used=%6d  maxUsed=%6d  delta=%+d%s\n",
-                s_drawCount, label, freeBytes, usedBytes, maxUsed, delta,
-                (delta != 0) ? "  << LEAK?" : "");
-        fclose(f);
-    }
-#endif
-}
-
-//=============================================================================
-// Data
-//-----------------------------------------------------------------------------
-typedef struct tagFormState
+static void _MakeRect(GUI_RECT* pR, int x, int y, int w, int h)
 {
-    uint32_t uNextTick;
-    int      curImage;       // current index into kImageList
-    int      satIndex;       // current index into kSatLevels
-    bool     bgOnly;         // true = cycle only background images (idx 11-12)
-    int      drawX, drawY;   // computed draw position (centered)
-} TFormState;
-
-static TFormState m_FormState;
-
-//=============================================================================
-//
-//-----------------------------------------------------------------------------
-static void _DrawCurrentImage()
-{
-    const auto& img = kImageList[m_FormState.curImage];
-
-    // Clear to black background
-    GUI_SetBkColor(GUI_BLACK);
-    GUI_Clear();
-
-    // Compute draw position — backgrounds are full-screen, small images centered
-    int x = (320 - img.w) / 2;
-    int y = (240 - img.h) / 2;
-
-    // Save baseline before draw
-    int freeBefore = (int)GUI_ALLOC_GetNumFreeBytes();
-    s_memBaselineFree = freeBefore;
-
-    // Draw the CSG image (background or atlas sub-picture)
-    int sat = img.skipSat ? 100 : kSatLevels[m_FormState.satIndex];
-    long long t0 = GetTimeUs();
-    CSG_DrawPicture(img.pPic, x, y, img.picIndex, sat);
-    long long t1 = GetTimeUs();
-    long long elapsedUs = t1 - t0;
-
-    // ---- Debug overlay ----
-    GUI_SetColor(GUI_WHITE);
-    GUI_SetTextMode(GUI_TEXTMODE_TRANS);
-
-    GUI_SetFont(GUI_FONT_AA4_ASCII16B);
-    char buf[64];
-    sprintf(buf, "[%d/%d] %s%s", m_FormState.curImage + 1, kImageCount, img.name,
-            m_FormState.bgOnly ? "  BG ONLY" : "");
-    GUI_DispStringAt(buf, 4, 2);
-
-    sprintf(buf, "%dx%d  %s  sat=%d%%", img.w, img.h, img.casName, sat);
-    GUI_DispStringAt(buf, 4, 18);
-
-    sprintf(buf, "%lld us", elapsedUs);
-    GUI_DispStringAt(buf, 4, 34);
-
-    int freeAfter = (int)GUI_ALLOC_GetNumFreeBytes();
-    int usedBytes = (int)GUI_ALLOC_GetNumUsedBytes();
-    sprintf(buf, "free:%d used:%d", freeAfter, usedBytes);
-    GUI_DispStringAt(buf, 4, 50);
-
-    if (freeAfter != freeBefore) {
-        GUI_SetColor(GUI_RED);
-        sprintf(buf, "LEAK delta=%+d", freeAfter - freeBefore);
-        GUI_DispStringAt(buf, 4, 66);
-    }
-
-    GUI_SetFont(&GUI_Font6x8);
-    GUI_SetColor(GUI_GRAY);
-    GUI_DispStringAt(m_FormState.bgOnly
-        ? "ENTER=Main  ESC=Quit  SPACE=Next  B=All"
-        : "ENTER=Main  ESC=Quit  SPACE=Next  B=bgOnly", 4, 226);
-
-    GUI_SetFont(GUI_FONT_AA4_ASCII16B);
-    GUI_SetColor(0x00b5f2);
-    GUI_DispStringAt("SG1210 CSG Decoder Test", 10, 200);
-
-    // Log memory (increment counter first so baseline logic works)
-    ++s_drawCount;
-
-    char label[64];
-    sprintf(label, "draw #%ld %s %lldus", s_drawCount, img.name, elapsedUs);
-    MemLog(label);
-
-    m_FormState.drawX = x;
-    m_FormState.drawY = y;
+  pR->x0 = x;
+  pR->y0 = y;
+  pR->x1 = x + w - 1;
+  pR->y1 = y + h - 1;
 }
 
+//=============================================================================
+// Drawing
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// Draw Layer0 full-screen background
+//-----------------------------------------------------------------------------
+static void _DrawBackground(void)
+{
+  GUI_DrawPicture(&picbkg320x240Lcsg, SP_BKG_X, SP_BKG_Y, 0, 100);
+}
+
+//-----------------------------------------------------------------------------
+// Draw a multi-lang text label. Skips silently if string is nullptr.
+//-----------------------------------------------------------------------------
+static void _DrawMLabel(uint32_t uTextId, const GUI_FONT* pFont,
+                        int x, int y, int w, int h,
+                        GUI_COLOR color, int align)
+{
+  const char* pStr = GetMultiLangString(uTextId);
+  if (nullptr == pStr) return;
+
+  GUI_RECT rect;
+  _MakeRect(&rect, x, y, w, h);
+
+  GUI_SetFont(pFont);
+  GUI_SetColor(color);
+  GUI_SetTextMode(GUI_TEXTMODE_TRANS);
+  GUI_DispStringInRect(pStr, &rect, align);
+}
+
+//-----------------------------------------------------------------------------
+// Draw a static text label
+//-----------------------------------------------------------------------------
+static void _DrawSLabel(const char* pStr, const GUI_FONT* pFont,
+                        int x, int y, int w, int h,
+                        GUI_COLOR color, int align)
+{
+  if (nullptr == pStr) return;
+
+  GUI_RECT rect;
+  _MakeRect(&rect, x, y, w, h);
+
+  GUI_SetFont(pFont);
+  GUI_SetColor(color);
+  GUI_SetTextMode(GUI_TEXTMODE_TRANS);
+  GUI_DispStringInRect(pStr, &rect, align);
+}
+
+//-----------------------------------------------------------------------------
+// Draw all Layer1 overlay text elements
+//-----------------------------------------------------------------------------
+static void _DrawOverlay(void)
+{
+  // Device model - via multi-lang string
+  _DrawMLabel(SP_MODEL_TEXT, SP_MODEL_FONT,
+              SP_MODEL_X, SP_MODEL_Y, SP_MODEL_W, SP_MODEL_H,
+              SP_MODEL_COLOR, SP_MODEL_ALIGN);
+
+  // Device function name (Chinese) - via multi-lang string
+  _DrawMLabel(SP_NAME_TEXT, SP_NAME_FONT,
+              SP_NAME_X, SP_NAME_Y, SP_NAME_W, SP_NAME_H,
+              SP_NAME_COLOR, SP_NAME_ALIGN);
+
+  // Device function name (English) - static string
+  _DrawSLabel(SP_ENG_TEXT, SP_ENG_FONT,
+              SP_ENG_X, SP_ENG_Y, SP_ENG_W, SP_ENG_H,
+              SP_ENG_COLOR, SP_ENG_ALIGN);
+
+  // Copyright - via multi-lang string
+  _DrawMLabel(idDevCopyright, SP_COPY_FONT,
+              SP_COPY_X, SP_COPY_Y, SP_COPY_W, SP_COPY_H,
+              SP_COPY_COLOR, SP_COPY_ALIGN);
+}
+
+//-----------------------------------------------------------------------------
+// Full screen redraw: clear, background, then overlay
+//-----------------------------------------------------------------------------
+static void _Redraw(void)
+{
+  GUI_SetBkColor(GUI_BLACK);
+  GUI_Clear();
+  _DrawBackground();
+  _DrawOverlay();
+
+  //GUI_DrawPicture(&picMAUAtlascsg,  10, 10, picIdxMU_Item32x32_01, 100);
+  //GUI_DrawPicture(&picMAUAtlascsg,  60, 10, picIdxMU_Item32x32_02, 100);
+  //GUI_DrawPicture(&picMAUAtlascsg, 110, 10, picIdxMU_Item32x32_03, 100);
+  //GUI_DrawPicture(&picMAUAtlascsg, 160, 10, picIdxMU_Item32x32_04, 100);
+  //GUI_DrawPicture(&picMAUAtlascsg, 210, 10, picIdxMU_Item32x32_05, 100);
+  //GUI_DrawPicture(&picMAUAtlascsg, 260, 10, picIdxMU_Item32x32_06, 100);
+}
+
+//=============================================================================
+// Navigation
+//=============================================================================
+static void _GoToMain(void)
+{
+  gfc::ReplaceForm(WID_MainForm, nullptr);
+}
+
+//=============================================================================
+// Form lifecycle callbacks
+//=============================================================================
+
+//-----------------------------------------------------------------------------
+// _Init: reset state. Called once when form is first created.
 //-----------------------------------------------------------------------------
 static void _Init(const void* argument)
 {
-    memset(&m_FormState, 0, sizeof(m_FormState));
-#ifdef __vmSIMULATOR__
-    // Clear log file
-    const char* tmp = getenv("TEMP"); if (!tmp) tmp = ".";
-    char path[256];
-    sprintf(path, "%s\\sg1210_mem_log.txt", tmp);
-    FILE* f = fopen(path, "w");
-    if (f) { fprintf(f, "=== SG1210 CSG Decoder Test ===\n\n"); fclose(f); }
-#endif
+  (void)argument;
+  memset(&m_State, 0, sizeof(m_State));
 }
+
+//-----------------------------------------------------------------------------
+// _Show: called each time the form becomes visible.
+// Reset the timeout timer and redraw.
 //-----------------------------------------------------------------------------
 static void _Show(const void* argument)
 {
-    MemLog("_Show entry");
-    m_FormState.curImage = 0;
-    m_FormState.satIndex = 0;
-    _DrawCurrentImage();
-    MemLog("_Show exit");
+  (void)argument;
+  m_State.uStartTime = GUI_GetTime();
+  m_State.bTimedOut  = false;
+  _Redraw();
 }
+
+//-----------------------------------------------------------------------------
+// _Close: called when form is removed from screen.
+// Nothing to free (static allocation).
 //-----------------------------------------------------------------------------
 static void _Close(const void* argument)
 {
-    MemLog("_Close");
+  (void)argument;
 }
+
+//-----------------------------------------------------------------------------
+// _OnTick: periodic timer. Checks 60-second idle timeout.
 //-----------------------------------------------------------------------------
 static void _OnTick(uint32_t uTick)
 {
-    (void)uTick;  // gform::Tick() sends Data.v=0, use GUI_GetTime() instead
-    uint32_t now = GUI_GetTime();
-    if (now > m_FormState.uNextTick) {
-        const auto& img = kImageList[m_FormState.curImage];
-        // Cycle saturation first, then image (skipSat backgrounds stay at satIndex=0)
-        if (!img.skipSat && m_FormState.satIndex < kSatCount - 1) {
-            m_FormState.satIndex++;
-        } else {
-            m_FormState.satIndex = 0;
-            if (m_FormState.bgOnly) {
-                m_FormState.curImage = (m_FormState.curImage >= kBgLastIdx)
-                    ? kBgFirstIdx : m_FormState.curImage + 1;
-            } else {
-                m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-            }
-        }
-        _DrawCurrentImage();
-        m_FormState.uNextTick = now + 300;
-    }
+  (void)uTick;
+  if (m_State.bTimedOut) return;
+
+  if (GUI_GetTime() - m_State.uStartTime >= SP_TIMEOUT_MS)
+  {
+    m_State.bTimedOut = true;
+    _GoToMain();
+  }
 }
+
+//-----------------------------------------------------------------------------
+// _OnKeyUp: any key release immediately exits to GMainForm (spec I.1.1).
 //-----------------------------------------------------------------------------
 static void _OnKeyUp(uint16_t uwKey)
 {
-    if (uwKey == KEY_ENTER) {
-        MemLog("KEY_ENTER -> MainForm");
-        gform::ReplaceForm(WID_MainForm, nullptr);
-    } else if (uwKey == KEY_ESCAPE) {
-        MemLog("KEY_ESCAPE -> MainForm");
-        gform::ReplaceForm(WID_MainForm, nullptr);
-    } else if (uwKey == 'B' || uwKey == 'b') {
-        // Toggle background-only mode
-        m_FormState.bgOnly = !m_FormState.bgOnly;
-        if (m_FormState.bgOnly) {
-            m_FormState.curImage = kBgFirstIdx;
-            m_FormState.satIndex = 0;
-        } else {
-            m_FormState.curImage = 0;
-            m_FormState.satIndex = 0;
-        }
-        _DrawCurrentImage();
-        m_FormState.uNextTick = GUI_GetTime() + 5000;
-    } else if (uwKey == ' ') {  // SPACE — advance saturation or next image
-        const auto& img = kImageList[m_FormState.curImage];
-        if (!img.skipSat && m_FormState.satIndex < kSatCount - 1) {
-            m_FormState.satIndex++;
-        } else {
-            m_FormState.satIndex = 0;
-            if (m_FormState.bgOnly) {
-                m_FormState.curImage = (m_FormState.curImage >= kBgLastIdx)
-                    ? kBgFirstIdx : m_FormState.curImage + 1;
-            } else {
-                m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-            }
-        }
-        _DrawCurrentImage();
-        m_FormState.uNextTick = GUI_GetTime() + 5000;  // pause auto-cycle
-    } else if (uwKey == KEY_LEFT) {
-        if (m_FormState.curImage > 0) {
-            m_FormState.curImage--;
-            m_FormState.satIndex = 0;
-            _DrawCurrentImage();
-        }
-    } else if (uwKey == KEY_RIGHT) {
-        if (m_FormState.bgOnly) {
-            m_FormState.curImage = (m_FormState.curImage >= kBgLastIdx)
-                ? kBgFirstIdx : m_FormState.curImage + 1;
-        } else {
-            m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-        }
-        m_FormState.satIndex = 0;
-        _DrawCurrentImage();
-    }
+  (void)uwKey;
+  _GoToMain();
 }
+
+//-----------------------------------------------------------------------------
+// _OnTouch: touch-up immediately exits to GMainForm (spec I.1.1).
+//-----------------------------------------------------------------------------
+static void _OnTouch(uint16_t action)
+{
+  if (action == TOUCH_UP)
+  {
+    _GoToMain();
+  }
+}
+
+//-----------------------------------------------------------------------------
+// _OnMessage: central message dispatcher.
 //-----------------------------------------------------------------------------
 static void _OnMessage(GM_MESSAGE* pMsg)
 {
-    if (nullptr == pMsg) return;
+  if (nullptr == pMsg) return;
 
-    switch (pMsg->MsgId) {
-    case GM_TIMER_TICK:
-        _OnTick(pMsg->Data.v);
-        break;
-    case GM_KEYUP:
-        if (pMsg->Param) {
-            _OnKeyUp(pMsg->Param);
-            pMsg->MsgId = 0;
-        }
-        break;
-#if GUI_SUPPORT_TOUCH
-    case GM_TOUCH:
-        if (pMsg->Param == TOUCH_UP) {
-            // Touch → advance saturation or next image
-            const auto& img = kImageList[m_FormState.curImage];
-            if (!img.skipSat && m_FormState.satIndex < kSatCount - 1) {
-                m_FormState.satIndex++;
-            } else {
-                m_FormState.satIndex = 0;
-                if (m_FormState.bgOnly) {
-                    m_FormState.curImage = (m_FormState.curImage >= kBgLastIdx)
-                        ? kBgFirstIdx : m_FormState.curImage + 1;
-                } else {
-                    m_FormState.curImage = (m_FormState.curImage + 1) % kImageCount;
-                }
-            }
-            _DrawCurrentImage();
-            m_FormState.uNextTick = GUI_GetTime() + 5000;
-        }
-        pMsg->MsgId = 0;
-        break;
-#endif
+  switch (pMsg->MsgId)
+  {
+
+  case GM_TIMER_TICK:
+    _OnTick(static_cast<uint32_t>(pMsg->Data.v));
+    break;
+
+  case GM_KEYUP:
+    if (pMsg->Param)
+    {
+      _OnKeyUp(pMsg->Param);
+      pMsg->MsgId = 0;
     }
+    break;
+
+#if GUI_SUPPORT_TOUCH
+  case GM_TOUCH:
+    _OnTouch(pMsg->Param);
+    pMsg->MsgId = 0;
+    break;
+#endif
+
+  default:
+    break;
+  }
 }
+
 //=============================================================================
-// Form
-//-----------------------------------------------------------------------------
+// Form descriptor - exposed via GPSplashForm.h
+//=============================================================================
 const GWinForm FSplashForm =
 {
-    _Init,
-    _Show,
-    _Close,
-    _OnMessage
+  _Init,
+  _Show,
+  _Close,
+  _OnMessage
 };
 
-// Auto-register with new GForm system
-static const gform::FormRegistrar kRegSplash(WID_SplashForm, &FSplashForm, "Splash");
+// Auto-register with GFormCentra navigation system
+static const gfc::FormRegistrar kRegSplash(WID_SplashForm, &FSplashForm, "Splash");
 //-----------------------------------------------------------------------------

@@ -51,42 +51,36 @@
 //-----------------------------------------------------------------------------
 #ifdef __vmSIMULATOR__
 // 生成 NVRAM 文件名：将 EXE 所在目录与 pfName 拼接到 dest 中
-// 注意：dest 应至少能容纳 MAX_PATH 字符，否则结果会被截断
+// dest 应至少能容纳 MAX_PATH 字符
 static bool genNVFileName(const char* pfName, char* dest, size_t destSize)
 {
     if (!pfName || !dest || destSize == 0) {
-        if (dest)
-            dest[0] = '\0';
+        if (dest) dest[0] = '\0';
         return false;
     }
 
+    // 1. 获取执行文件完整路径
     char exePath[MAX_PATH] = { 0 };
-    int  iLength = GetModuleFileNameA(nullptr, exePath, sizeof(exePath));
-    if (iLength == 0 || iLength == sizeof(exePath)) { // 获取失败或被截断
+    DWORD iLength = GetModuleFileNameA(nullptr, exePath, sizeof(exePath));
+    if (iLength == 0 || iLength >= sizeof(exePath)) {
         dest[0] = '\0';
         return false;
     }
 
-    // 去掉可执行文件名，保留目录
-    int iPos = iLength - 1;
-    while (iPos >= 0 && exePath[iPos] != '\\' && exePath[iPos] != '/') {
-        iPos--;
-    }
-
-    if (0 == iPos ) {
+    // 2. 去掉文件名，保留目录（含末尾分隔符）
+    char* pLastSep = strrchr(exePath, '\\');
+    if (!pLastSep) pLastSep = strrchr(exePath, '/');
+    if (!pLastSep) {
         dest[0] = '\0';
         return false;
     }
+    pLastSep[1] = '\0';  // 在分隔符后截断，保留 "D:\path\"
 
-    iPos++;
-    exePath[iPos] = '\0'; // 将目录末尾的分隔符保留，并将其后的文件名部分清空
-
-
-// 在 genNVFile 中替换原有两次 strcpy(...) 调用，替换为安全拷贝：
-if (FAILED(StringCchCopyA(dest, destSize, exePath)))
-    return false;
-if (FAILED(StringCchCopyA(dest + iPos, destSize - iPos, pfName)))
-    return false;
+    // 3. 安全拼接：目录 + 文件名
+    if (FAILED(StringCchCopyA(dest, destSize, exePath)))
+        return false;
+    if (FAILED(StringCchCatA(dest, destSize, pfName)))
+        return false;
 
     return true;
 }

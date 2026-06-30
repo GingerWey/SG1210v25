@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 /*
- File        : FuncLVCC.cpp
+ File        : FuncUVTC.cpp
  Version     : V1.01
  By          : 银网科技
 
@@ -13,7 +13,7 @@
     定义SG1210功能接口
 */
 //-----------------------------------------------------------------------------
-#include "FuncSUTC.h"
+#include "FuncUVTC.h"
 
 #include "DevRegs.h"
 #include "DevRegInfoList.h"
@@ -169,8 +169,8 @@ static void funcInit(void)
   //Init_FFT();
 #endif
 
-  if( dfiFuncSUTC.LogicReset )
-    dfiFuncSUTC.LogicReset();
+  if( dfiFuncUVTC.LogicReset )
+    dfiFuncUVTC.LogicReset();
 }
 //-----------------------------------------------------------------------------
 // 填写装置参数
@@ -213,10 +213,10 @@ static const TEventProperty* _getRegEventProperty(uint32_t uRegNum)
 // 全局数据
 //-----------------------------------------------------------------------------
 // LVCC功能接口
-const TDevFuncInterface dfiFuncSUTC =
+const TDevFuncInterface dfiFuncUVTC =
 {
-   DEVFUN_LVCC             // Type        功能代码
-  ,idDevFuncSUTC           // Name        功能名称
+   DEVFUN_UVTC             // Type        功能代码
+  ,idDevFuncUVTC           // Name        功能名称
 
   ,funcInit                // InitProc    初始化接口
 

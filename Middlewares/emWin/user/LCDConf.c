@@ -72,7 +72,7 @@ Purpose     : Display controller configuration (single layer)
 //
 // Color conversion
 //
-#define COLOR_CONVERSION    GUICC_M565
+#define COLOR_CONVERSION    GUICC_565   //GUICC_M565
 
 //
 // Display driver

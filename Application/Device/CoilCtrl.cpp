@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
   File        : CoilCTRL.cpp
   Version     : V2.10
@@ -384,7 +384,7 @@ static void _KeepCoilOnDuty()
 //    BoardCtrl_PowerControl( TOKEN_BRDCTRL_ENCODE(TOKEN_BRDCTRL_CK1, TOKEN_BRDCTRL_OFF) );
 //    FController.stCoil1 = coilPassby;
 
-//    SetCoilState(COIL_PassBy);
+//    SetCoilState(COIL_Passby);
 //    }
 //#endif
 
@@ -547,7 +547,7 @@ static void _DoPowerResumeProc()
 //      // 线圈关闭
 //      _KeepCoilStop( false );
 
-//      SetCoilState(COIL_KeppOff);
+//      SetCoilState(COIL_KeepOff);
 
 //      // 生成事件
 //      _SetStateReg      ( REG_ACPWR_RESUME_LATCH, STATE_TRUE );
@@ -630,7 +630,7 @@ static void _DoPowerLossProc()
 //      // 记录状态
 //      _MarkState();
 
-//      SetCoilState(COIL_KeppOn);
+//      SetCoilState(COIL_KeepOn);
 
 //      // 生成事件
 //      _SetStateReg      ( REG_ACPWR_LOSS_SUSTAIN, STATE_TRUE );
@@ -710,7 +710,7 @@ static void _DoPowerLossProc()
 //        // 记录状态
 //        _MarkState();
 
-//        SetCoilState(COIL_KeppOn);
+//        SetCoilState(COIL_KeepOn);
 //        }
 //      }
 //    }
@@ -844,7 +844,7 @@ static void _DoStartupProc()
         _SwitchCoilSupply( TOKEN_BRDSET_SET(coilPassby) );
 
         // 旁路状态
-        SetCoilState( COIL_PassBy );
+        SetCoilState( COIL_Passby );
         }
       // 交流输入无压？
       else if( rInputValidVolt > rVoltIn )
@@ -1138,7 +1138,7 @@ static void _RecoveryState( uint32_t uToken )
           _SwitchCoilSupply( TOKEN_BRDSET_SET(coilSupport) );
             
           // 得电闭锁状态
-          SetCoilState( COIL_KeppOff );
+          SetCoilState( COIL_KeepOff );
           }
         else
           {
@@ -1166,7 +1166,7 @@ static void _RecoveryState( uint32_t uToken )
           _SwitchCoilSupply( TOKEN_BRDSET_SET(coilStop) );
 
           // 得电闭锁状态
-          SetCoilState( COIL_KeppOn );
+          SetCoilState( COIL_KeepOn );
           }
           
         // 还需要送别是否延时结束，但合闸按键延时未结束
@@ -1182,7 +1182,7 @@ static void _RecoveryState( uint32_t uToken )
                                                       TOKEN_BRDCTRL_ON ) );
             
             // 得电闭锁状态
-            SetCoilState( COIL_KeppOn );
+            SetCoilState( COIL_KeepOn );
             }
           else
             {
@@ -1190,7 +1190,7 @@ static void _RecoveryState( uint32_t uToken )
             _SwitchCoilSupply( TOKEN_BRDSET_SET(coilPassby) );
 
             // 旁路状态
-            SetCoilState( COIL_PassBy );
+            SetCoilState( COIL_Passby );
             }
           }
           
@@ -1234,7 +1234,7 @@ static void _RecoveryState( uint32_t uToken )
 
     switch( GetCoilState() )
       {
-      case COIL_KeppOn:
+      case COIL_KeepOn:
         {
         // 在动作过程中复位，继续
         FController.timeStart.FDays    = timeStart.FDays;
@@ -1245,7 +1245,7 @@ static void _RecoveryState( uint32_t uToken )
 
         break;
         }
-      case COIL_KeppOff:
+      case COIL_KeepOff:
         {
         // 在动作过程中复位，继续
         FController.timeStart.FDays    = timeStart.FDays;
@@ -1256,7 +1256,7 @@ static void _RecoveryState( uint32_t uToken )
 
         break;
         }
-      case COIL_PassBy:
+      case COIL_Passby:
         {
         // 在动作过程中复位，继续
         FController.timeStart.FDays    = 0;
