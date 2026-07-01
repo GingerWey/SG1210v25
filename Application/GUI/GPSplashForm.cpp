@@ -90,7 +90,7 @@
 #define SP_COPY_ALIGN      (GUI_TA_HCENTER | GUI_TA_VCENTER)
 
 // Timeout
-#define SP_TIMEOUT_MS      60000     // 60 seconds idle timeout
+#define SP_TIMEOUT_MS      30000     // 30 seconds idle timeout
 
 //=============================================================================
 // Form state

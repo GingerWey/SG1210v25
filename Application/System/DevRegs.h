@@ -437,6 +437,9 @@ extern "C" {
 #define REG_DI5                   (REG_DigInp + 5)        // 旁路状态
 #define REG_DI6                   (REG_DigInp + 6)        // 加热器
 #define REG_DI7                   (REG_DigInp + 7)        // 风扇状态
+ #define REG_stAdapterOk           REG_DI1
+ #define REG_stInvertorOk          REG_DI2
+ #define REG_stInvertorEn          REG_DI3
  #define REG_stBreakerON           REG_DI4
  #define REG_stPassby              REG_DI5
  #define REG_stHeater              REG_DI6

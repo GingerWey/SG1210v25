@@ -37,8 +37,17 @@ void DFT80_H1(const int16_t *pwSamples, TDFTResult *pfResult);
 //-----------------------------------------------------------------------------
 // 二次谐波
 // 输入： pwSamples - 80个点的实部系列
-// 输出： pfResult  - 保存结果的缓冲区，一个复数，实部、虚部  
+// 输出： pfResult  - 保存结果的缓冲区，一个复数，实部、虚部
 void DFT80_H2(const int16_t *pwSamples, TDFTResult *pfResult);
+//-----------------------------------------------------------------------------
+// 三次谐波
+void DFT80_H3(const int16_t *pwSamples, TDFTResult *pfResult);
+//-----------------------------------------------------------------------------
+// 四次谐波
+void DFT80_H4(const int16_t *pwSamples, TDFTResult *pfResult);
+//-----------------------------------------------------------------------------
+// 五次谐波
+void DFT80_H5(const int16_t *pwSamples, TDFTResult *pfResult);
 //-----------------------------------------------------------------------------
 #ifdef __cplusplus
 }

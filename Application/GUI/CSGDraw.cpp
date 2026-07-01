@@ -22,6 +22,7 @@
 #include "CSGCodec.h"
 
 #include "GUIBitmap.h"
+#include "DevRegs.h"
 
 #include "GUI.h"
 #include "LCD.h"
@@ -492,6 +493,11 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
           }
 #endif
         ++row;
+          
+          
+#ifdef RRS_GUITASK
+        SetRSTSrc(RRS_GUITASK);
+#endif
     }
 
     // Free DEFLATE intermediate buffer if allocated

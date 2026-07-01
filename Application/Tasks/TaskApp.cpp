@@ -269,7 +269,7 @@ static void appTask(void *argument)
     //CreateUARTTask();
 
     // 启动看门狗
-    //MX_IWDG_Init();
+    MX_IWDG_Init();
     }
 //  else
 //    {

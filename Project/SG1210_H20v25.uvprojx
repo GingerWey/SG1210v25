@@ -850,6 +850,11 @@
               <FileType>8</FileType>
               <FilePath>..\Application\System\FuncUVTC.cpp</FilePath>
             </File>
+            <File>
+              <FileName>Retarget.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\System\Retarget.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
