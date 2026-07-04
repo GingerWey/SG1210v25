@@ -72,7 +72,7 @@ inline constexpr int     kCalShift          = 4;     // Shift CAL into high nibb
 // ============================================================================
 
 inline constexpr char kEncoderName[]    = "CSG Toolkits";
-inline constexpr int  kEncoderVersion   = 0x01062627;  // v1.6.2627 (2026 wk27)
+inline constexpr int  kEncoderVersion   = 0x01072627;  // v1.7.2627 (2026 wk27)
 
 // ============================================================================
 // CSG magic markers
