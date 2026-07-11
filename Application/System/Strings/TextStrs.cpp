@@ -280,9 +280,9 @@ constexpr TMultiLangStrings listMultiStrings[] =
   ,{ idEnumChgRst,        szEnumChgRst,                szEngEnumChgRst      }
 
 // 事件列表窗体
-  ,{ idEventCatalog1,     "日志记录",                      "Log record"     }
-  ,{ idEventCatalog2,     "报警记录",                      "Alarm log"      }
-  ,{ idEventCatalog3,     "事件记录",                      "Fatal log"      }
+  ,{ idEventCatalog1,     "运行日志",                   "system logs"       }
+  ,{ idEventCatalog2,     "装置事件",                   "Device operation"  }
+  ,{ idEventCatalog3,     "自动控制",                   "Automated events"  }
   ,{ idDateTimeFormat,    "%02u-%02u %02u:%02u\"%02u'%03u", "%02u-%02u %02u:%02u\"%02u'%03u" }
   ,{ idEventEmpty,        "无记录",                      "No Record"                         }
   ,{ idEvtDataEmpty,      "无数据",                      "No Data"                           }
