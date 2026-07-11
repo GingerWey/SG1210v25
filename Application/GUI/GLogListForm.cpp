@@ -95,8 +95,6 @@
 
 #define LL_ROW_H           36
 #define LL_VISIBLE         ((LL_CONTENT_Y1 - LL_CONTENT_Y0 + 1) / LL_ROW_H)  // 5
-
-#define LL_REFRESH_MS      1000
 #define LL_SWIPE_PX        30
 #define LL_KEY_REPEAT_INIT_MS  300
 #define LL_KEY_REPEAT_MS       120
@@ -140,7 +138,6 @@ struct TLogFormState {
   uint16_t       uCount;
   uint16_t       uTopItem;
   uint16_t       uCurItem;
-  uint32_t       uLastRefresh;
   uint32_t       uLastKeyTick;
   uint16_t       uKeyRepeat;
   TEventWithProperty eventList[LL_VISIBLE];
@@ -655,13 +652,9 @@ static void _OnTouch(uint16_t action, int16_t x, int16_t y)
 //=============================================================================
 static void _OnTick(uint32_t uNow)
 {
-  if (nullptr == s_pState) {
-    return;
-  }
-  if ((uNow - s_pState->uLastRefresh) >= LL_REFRESH_MS) {
-    s_pState->uLastRefresh = uNow;
-    _RefreshValues();
-  }
+  (void)uNow;
+  // GLogListForm is static display — no automatic refresh.
+  // Updates only on user interaction (key press, touch swipe, category switch).
 }
 
 //=============================================================================
@@ -706,7 +699,6 @@ static void _Show(const void* argument)
   _FlushForm();
   _UpdateList();
   _DrawScrollbar();
-  s_pState->uLastRefresh = GUI_GetTime();
 }
 
 static void _Close(const void* argument)
