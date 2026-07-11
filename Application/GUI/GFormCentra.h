@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.h
- Version     : V1.01
+ Version     : V1.02
  By          : Wey. Silver Grid
 
  Description : GForm — Unified GUI Form management system.
@@ -23,6 +23,7 @@
 
  Date        : 2026.06.24 (V1.00 — initial GFormCentra system)
               2026.06.25 (V1.01 — added TouchEvent API for touch screen)
+              2026.07.08 (V1.02 — added QueryIdleExpire for GM_IDLE_EXPIRE query chain)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_GFC_H
@@ -58,7 +59,6 @@ constexpr uint16_t kFormIdInvalid = 0xFFFF;
   constexpr uint16_t WID_MessageForm    = 107;
   constexpr uint16_t WID_ConfigForm     = 108;
   constexpr uint16_t WID_GuageForm      = 109;
-  constexpr uint16_t WID_FatalForm      = 110;
   constexpr uint16_t WID_LoginDialog    = 111;
   constexpr uint16_t WID_TimeDialog     = 112;
   constexpr uint16_t WID_WLGListForm    = 113;
@@ -68,6 +68,7 @@ constexpr uint16_t kFormIdInvalid = 0xFFFF;
   constexpr uint16_t WID_DeviceTestForm = 117;
   constexpr uint16_t WID_EthernetConfigForm = 118;
   constexpr uint16_t WID_AboutForm      = 119;
+  constexpr uint16_t WID_LogListForm    = 120;
 #endif
 
 //=============================================================================
@@ -199,6 +200,11 @@ void PostMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);
 
 /// Broadcast a message to ALL forms currently on the stack (bottom to top).
 void BroadcastMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);
+
+/// Query the current form whether it wants to block the idle-timeout return
+/// to MainForm. Sends GM_IDLE_EXPIRE to the current form; returns true if the
+/// form vetoed by setting Data.v > 0.
+bool QueryIdleExpire();
 
 /// Handle a key event (translate raw key + press count to GM_KEYDOWN/UP/PRESS).
 void KeyEvent(uint32_t key, uint32_t pressedCnt);

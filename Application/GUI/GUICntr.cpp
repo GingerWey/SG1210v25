@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GUICntr.cpp
- Version     : V2.01
+ Version     : V2.04
  By          : Wey. Silver Grid
 
  Description : GUI controller - adapter layer delegating to the new GForm system.
@@ -12,7 +12,12 @@
                DEPRECATED: New code should use GFormCentra.h directly.
                This file will be removed in a future cleanup phase.
 
- Date       : 2026.06.25 (v2.01 — added touch polling support)
+ Date       : 2026.07.08 (v2.04 — register GDataListForm in s_formTableSim)
+              2026.07.08 (v2.03 — GUIFormOpen validation via gfc::FindForm,
+                          replaces hardcoded idx>=15 that blocked WID 115..119)
+              2026.07.08 (v2.02 — idle timeout now queries GM_IDLE_EXPIRE via
+                          gfc::QueryIdleExpire before switching to MainForm)
+              2026.06.25 (v2.01 — added touch polling support)
               2026.06.24 (v2.0  — adapter for gform)
               2023.12.05 (v1.10 — original implementation)
 */
@@ -40,24 +45,25 @@
 #include "GUIMessage.h"
 
 //  Form headers (for GFormsList registration)
-#include "GPSplashForm.h"
-#include "GPMenuForm.h"
-#include "GPMainForm.h"
-#include "GPEventBrowserForm.h"
-#include "GPFatalForm.h"  // used by GUIShowFatalMessage
+#include "GSplashForm.h"
+#include "GMenuForm.h"
+#include "GMainForm.h"
+#include "GLogListForm.h"
+#include "GDataListForm.h"
+#include "GFatalForm.h"  // used by GUIShowFatalMessage
 
 // MCU-only forms (require FreeRTOS / STM32 HAL / rtc.h)
 #ifndef __vmSIMULATOR__
-#include "GPDevInfoForm.h"
-#include "GPMessageForm.h"
+#include "GDevInfoForm.h"
+#include "GMessageForm.h"
 #include "GUICtrlConfigDialog.h"
 #include "GUIUARTConfigDialog.h"
-//#include "GPConfigForm.h"
-#include "GPGuageForm.h"
-#include "GPLoginDialog.h"
-#include "GPTimeDialog.h"
-//#include "GPWLGListForm.h"
-//#include "GPWLGViewForm.h"
+//#include "GConfigForm.h"
+#include "GGuageForm.h"
+#include "GLoginDialog.h"
+#include "GTimeDialog.h"
+//#include "GWLGListForm.h"
+//#include "GWLGViewForm.h"
 #include "GUIMisc.h"
 #endif
 
@@ -102,7 +108,8 @@ static constexpr FormEntry s_formTableSim[] = {
     { WID_SplashForm,       &FSplashForm,         "Splash"         },
     { WID_MenuForm,         &FMainMenuForm,       "Menu"           },
     { WID_MainForm,         &FMainForm,           "Main"           },
-    { WID_EventListForm,    &FEventBrowserForm,   "EventBrowser"   },
+    { WID_DataListForm,     &FDataListForm,       "DataList"       },
+    { WID_LogListForm,      &FLogListForm,        "LogList"        },
 };
 
 #ifndef __vmSIMULATOR__
@@ -113,9 +120,9 @@ static constexpr FormEntry s_formTableMcu[] = {
     { WID_MessageForm,      &FMessageForm,        "Message"        },
 //    { WID_ConfigForm,       &FConfigForm,         "Config"         },
     { WID_GuageForm,        &FGuageForm,          "Guage"          },
-    { WID_FatalForm,        &FFatalForm,          "Fatal"          },
     { WID_LoginDialog,      &FLoginDialog,        "Login"          },
     { WID_TimeDialog,       &FTimeDialog,         "Time"           },
+    { WID_LogListForm,      &FLogListForm,        "LogList"        },
 //    { WID_WLGListForm,      &FWavelogListForm,    "WLGList"        },
 //    { WID_WLGViewForm,      &FWavelogViewForm,    "WLGView"        },
 };
@@ -230,9 +237,13 @@ void GUITick(void)
 #ifndef __vmSIMULATOR__
         // INDLED_LCDBG(0);
 #endif
-        // Switch to main if we're not already there
+        // Switch to main if we're not already there and the current form
+        // does not veto (e.g. an editor with unsaved changes). The form
+        // signals a veto by filling GM_IDLE_EXPIRE.Data.v > 0.
         if (gfc::GetCurrentFormId() != WID_MainForm) {
-            needSwitchToMain = true;
+            if (!gfc::QueryIdleExpire()) {
+                needSwitchToMain = true;
+            }
         }
     }
 
@@ -349,11 +360,12 @@ void GUICenter()
 //=============================================================================
 bool GUIFormOpen(uint32_t uFormId, const void* para)
 {
-    // Validate form id range (WID_FORMBEGIN=100 .. WID_WLGViewForm=114)
-    if (WID_FORMBEGIN > uFormId) return false;
-
-    size_t idx = uFormId - WID_FORMBEGIN;
-    if (idx >= 15) return false;  // 15 total registered forms (4 Sim + 11 MCU)
+    // Validate via the GFormCentra registry: any registered form id is accepted,
+    // unregistered ids are rejected. This replaces a stale hardcoded range check
+    // (idx >= 15) that blocked WID_DataListForm..WID_AboutForm (115..119).
+    if (nullptr == gfc::FindForm(static_cast<gfc::FormId>(uFormId))) {
+        return false;
+    }
 
     gfc::PushForm(static_cast<gfc::FormId>(uFormId), para);
     return true;

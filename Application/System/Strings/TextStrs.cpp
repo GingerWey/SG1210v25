@@ -251,7 +251,30 @@ constexpr TMultiLangStrings listMultiStrings[] =
 //  ,{ idCalibOk,           szCalibOk,                   szEngCalibOk         }
 //  ,{ idCalibSomeOk,       szCalibSomeOk,               szEngCalibSomeOk     }
 //  ,{ idCalibFailed,       szCalibFailed,               szEngCalibFailed     }
-//  ,{ idMeaAdjFailed,      szMeaAdjFailed,              szEngMeaAdjFailed    }
+//  ,{ idMeaAdjFailed,      szMeaAdjFailed,              szEngMeaAdjFailed    }\
+// 
+// DataList Form
+  ,{ idDVGroup01,         "交流信号",               "AC Measure"           }
+  ,{ idDVGroup02,         "动力电池",               "Main Battery"         }
+  ,{ idDVGroup03,         "实时时钟",               "Real Time Clock"      }
+  ,{ idDVGroup04,         "状态信号",               "Status Signal"        }
+  ,{ idDVGroup05,         "控制信号",               "Control Signal"       }
+
+  ,{ idMeasName01,        "当前环境温度",           "RTC Temperature"      }
+  ,{ idMeasName02,        "后备电池电压",           "RTC Battery Voltage"  }
+  ,{ idMeasName03,        "电源输入频率",           "Input Frequency"      }
+  ,{ idMeasName04,        "供电输出频率",           "Output Frequency"     }
+  ,{ idMeasName05,        "充电功率",               "Charging Power"       }
+  ,{ idMeasName06,        "充电电流",               "Charging Current"     }
+  ,{ idMeasName07,        "最大充电电流",           "Max Charging Current" }
+  ,{ idMeasName08,        "放电功率",               "Discharging Power"    }
+  ,{ idMeasName09,        "放电电流",               "Discharging Current"  }
+  ,{ idMeasName10,        "最大放电电流",           "Max Discharging Current" }
+  ,{ idMeasName11,        "剩余容量",               "Remaining Capacity"   }
+  ,{ idMeasName12,        "本体温度",               "Body Temperature"     }
+  ,{ idMeasName13,        "电源输入电压",           "Input Voltage"        }
+  ,{ idMeasName14,        "供电输出电压",           "Output Voltage"       }
+
 // 枚举提示
   ,{ idEnumChanged,       szEnumChanged,               szEngEnumChanged     }
   ,{ idEnumChgRst,        szEnumChgRst,                szEngEnumChgRst      }

@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 /*
  File        : TextStrs.h
  Version     : V1.01
@@ -389,19 +389,40 @@ extern "C" {
 //#define idCalibFailed         0x19AB    //
 //#define idMeaAdjFailed        0x19AC    //
 
-// 枚举提示
-#define idEnumChanged         0x19B1    //
-#define idEnumChgRst          0x19B2    //
+// Data list group
+#define idDVGroup01           0x1A40
+#define idDVGroup02           0x1A41
+#define idDVGroup03           0x1A42
+#define idDVGroup04           0x1A43
+#define idDVGroup05           0x1A44
 
+#define idMeasName01          0x1A50
+#define idMeasName02          0x1A51
+#define idMeasName03          0x1A52
+#define idMeasName04          0x1A53
+#define idMeasName05          0x1A54
+#define idMeasName06          0x1A55
+#define idMeasName07          0x1A56
+#define idMeasName08          0x1A57
+#define idMeasName09          0x1A58
+#define idMeasName10          0x1A59
+#define idMeasName11          0x1A5A
+#define idMeasName12          0x1A5B
+#define idMeasName13          0x1A5C
+#define idMeasName14          0x1A5D
+
+// 枚举提示
+#define idEnumChanged         0x1A71    //
+#define idEnumChgRst          0x1A72    //
 
 // 事件列表窗体
-#define idEventCatalog1       0x1A01
-#define idEventCatalog2       0x1A01
-#define idEventCatalog3       0x1A01
+#define idEventCatalog1       0x1A81
+#define idEventCatalog2       0x1A82
+#define idEventCatalog3       0x1A83
 
-#define idDateTimeFormat      0x1A10    //
-#define idEventEmpty          0x1A11    //
-#define idEvtDataEmpty        0x1A12    //
+#define idDateTimeFormat      0x1A88    //
+#define idEventEmpty          0x1A89    //
+#define idEvtDataEmpty        0x1A8A    //
 
 // 设备配置
 #define idDevOptName01        0x2000    //

@@ -30,16 +30,16 @@ extern "C" {
 // 用于显示
 #define NES_DISP                  0x10000000u
   
-// CAN口
-#define NES_CAN_MASK              0x03000000u
-#define NES_CAN1                  0x01000000u
-#define NES_CAN2                  0x02000000u
-  #define GetCANEvtFilter(n)      (1 << (n + 24))  
+//// CAN口
+//#define NES_CAN_MASK              0x03000000u
+//#define NES_CAN1                  0x01000000u
+//#define NES_CAN2                  0x02000000u
+//  #define GetCANEvtFilter(n)      (1 << (n + 24))  
   
 // 串口
 #define NES_UART_MASK             0x000F0000u
 #define NES_UART1                 0x00010000u
-#define NES_UART2                 0x00020000u
+//#define NES_UART2                 0x00020000u
   #define GetUARTEvtFilter(n)     (1 << (n + 16))
 
 // 网口1连接n
@@ -78,12 +78,27 @@ extern "C" {
 void EVTMGR_Init(void);
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-// 追加事件记录
+// 追加事件记录（任务级，内部加锁）
 // 输入：
 //   uRegNum：发生报告的寄存器
-//   uAction：报告的行为 TRUE = 0->1;  FALSE = 1->0 
+//   uAction：报告的行为 TRUE = 0->1;  FALSE = 1->0
 // 返回：无
+// 注意：本函数在任务级调用；中断中请用 EVTMGR_PostEvent / EVTMGR_PostEventFromISR
 void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction );
+//-----------------------------------------------------------------------------
+// 投递事件到队列（任务级，ISR 安全的延迟路径）
+//   中断/任务均可经此把事件排入队列，由 EVTMGR_DrainEvents 在 appTask 中排空
+//   并调用 EVTMGR_AppendEvent，从而避免在 ISR 中操作事件缓冲区
+// 输入：同 EVTMGR_AppendEvent
+void EVTMGR_PostEvent( uint32_t uRegNum, uint32_t uAction );
+//-----------------------------------------------------------------------------
+// 投递事件到队列（中断级，FreeRTOS FromISR）
+//   pxHigherPriorityTaskWoken：FreeRTOS 标准 FromISR 参数，可为 nullptr
+void EVTMGR_PostEventFromISR( uint32_t uRegNum, uint32_t uAction,
+                              void *pxHigherPriorityTaskWoken );
+//-----------------------------------------------------------------------------
+// 排空事件队列（任务级，在 appTask 循环中周期调用）
+void EVTMGR_DrainEvents( void );
 //-----------------------------------------------------------------------------
 // 追加操作记录
 // 输入：

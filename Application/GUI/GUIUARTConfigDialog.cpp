@@ -19,7 +19,7 @@
 #include "GUIBitMap.h"
 #include "PictureRes.h"
 #include "Strings/TextStrs.h"
-#include "GPLoginDialog.h"
+#include "GLoginDialog.h"
 
 #include "RamHeap.h"
 

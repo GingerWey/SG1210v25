@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 /*
  File       : DevRegInfo.h
  Version    : V1.01
@@ -33,20 +33,20 @@
 // 表中的顺序要与 SIT_DIM_xx宏对应，即要等于SIT_GetDimVal(x)的值
 static const char *plistDIMName[] =
 {
-  "V",
-  "A",
-  "W",      
+  "V ",
+  "A ",
+  "W ",      
   "Var",    
   "VA",     
   "Wh",     
   "Varh",   
   "VAh",    
   "Hz",     
-  "`",    
+  "` ",    
   "`C",
   "#",      // Ω 
-  "%",
-  "S",
+  "% ",
+  "S ",
   "ms",  
   "/100",
   "/220",
@@ -104,23 +104,24 @@ const char* getDynaDIMName( const TDevRegInfoItem* pInfo )
 //-----------------------------------------------------------------------------
 // 获取量纲名称
 //-----------------------------------------------------------------------------
-// 获取量纲的名称 
-// 输入：uRegNum = 寄存器地址
-// 返回：0 = 寄存器不存在或寄存器无量纲  != 指向名称字符串的指针
-const char* RINF_GetDIMName( uint32_t uRegNum )
+const char* RINF_GetDIMNameEx( const TDevRegInfoItem* pInfo)
 {
 
-  // 取寄存器描述
-  const TDevRegInfoItem* pInfo = DevIntf_GetRegInfo( uRegNum );
-  if( NULL == pInfo )
-   return NULL;
+  if( NULL == pInfo ) 
+    {
+    return NULL;
+    }
   
   // 取量纲序号
   uint32_t uDIMShift = SIT_GetDimVal( pInfo->Property );
   if( SIT_DIM_None == uDIMShift )
+    {
     return NULL;
+    }
   else if( uDIMShift >= NUM_DIMNames )
+    {
     return getDynaDIMName( pInfo );
+    }
   
   // 取量纲名称
   const char* pcDIMName = plistDIMName[ uDIMShift - 1 ];
@@ -161,5 +162,16 @@ const char* RINF_GetDIMName( uint32_t uRegNum )
     }
   
   return pcDIMName;
+}
+//-----------------------------------------------------------------------------
+// 获取量纲的名称 
+// 输入：uRegNum = 寄存器地址
+// 返回：0 = 寄存器不存在或寄存器无量纲  != 指向名称字符串的指针
+const char* RINF_GetDIMName( uint32_t uRegNum )
+{
+
+  // 取寄存器描述
+  const TDevRegInfoItem* pInfo = DevIntf_GetRegInfo( uRegNum );
+  return RINF_GetDIMNameEx( pInfo );
 }
 //-----------------------------------------------------------------------------

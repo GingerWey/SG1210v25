@@ -14,6 +14,7 @@
 #define DEV_REGINFO_H
 
 #include "Dev_Cfg.h"
+#include "DevTypes.h"
 
 #include <stdint.h>
 //-----------------------------------------------------------------------------
@@ -107,9 +108,9 @@ extern "C" {
 #define SIT_EVT_SHIFT     18
 #define SIT_EVT_MASK      (0x07 << SIT_EVT_SHIFT)  // 18-20
 #define SIT_EVT_None      (0x00 << SIT_EVT_SHIFT)
-#define SIT_EVT_Event     (0x01 << SIT_EVT_SHIFT)
-#define SIT_EVT_Alarm     (0x02 << SIT_EVT_SHIFT)
-#define SIT_EVT_Fault     (0x03 << SIT_EVT_SHIFT)
+#define SIT_EVT_DevLog    (0x01 << SIT_EVT_SHIFT)  // 装置的运行日志
+#define SIT_EVT_DevStatus (0x02 << SIT_EVT_SHIFT)  // 装置内部状态，硬件故障，内部部件操作，通信事件
+#define SIT_EVT_AutoCtrl  (0x03 << SIT_EVT_SHIFT)  // 装置外部状态引起的事件，输入/输出变化、控制模式变化等
 //#define SIT_EVT_Current   (0x04 << SIT_EVT_SHIFT)
 //#define SIT_EVT_RmtCtrl   (0x05 << SIT_EVT_SHIFT)
 //#define SIT_EVT_Logic     (0x06 << SIT_EVT_SHIFT)
@@ -168,15 +169,19 @@ extern "C" {
 // 测量                   
 #define SIT_Cosx          (SIT_DIM_None | SIT_Type_Measure | SIT_SIGNED | SIT_VAT_REAL )
 
-#define SIT_Px            (SIT_MUL_Kilo | SIT_DIM_W   | SIT_Type_Measure | SIT_SIGNED | \
-                           SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT | SIT_VAT_REAL)
+#define SIT_Px            (SIT_DIM_W   | SIT_Type_Measure | SIT_SIGNED | SIT_VAT_REAL)
+#define SIT_kPx           (SIT_MUL_Kilo | SIT_Px | SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT)
 
-#define SIT_Qx            (SIT_MUL_Kilo | SIT_DIM_Var | SIT_Type_Measure | SIT_SIGNED | \
-                           SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT | SIT_VAT_REAL)
-#define SIT_Sx            (SIT_MUL_Kilo | SIT_DIM_VA  | SIT_Type_Measure | \
-                           SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT | SIT_VAT_REAL)
+#define SIT_Qx            (SIT_DIM_Var | SIT_Type_Measure | SIT_SIGNED | SIT_VAT_REAL)
+#define SIT_kQx           (SIT_MUL_Kilo | SIT_Qx | SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT)
+
+#define SIT_Sx            (SIT_DIM_VA  | SIT_Type_Measure | SIT_VAT_REAL)
+#define SIT_kSx           (SIT_MUL_Kilo | SIT_Sx | SIT_MUL_AUTOSHIFT | SIT_MUL_PT | SIT_MUL_CT)
 
 #define SIT_Freq          (SIT_DIM_Hz | SIT_Type_Measure)
+
+#define SIT_Perc          (SIT_DIM_Perc | SIT_Type_Measure)
+#define SIT_Temp          (SIT_DIM_Temp | SIT_Type_Measure)
 
 // 电度
 #define SIT_Metering      (SIT_Type_Metering | SIT_MUL_AUTOSHIFT | SIT_VAT_REAL | SIT_UNSIGNED)
@@ -185,45 +190,46 @@ extern "C" {
 #define SIT_Es            (SIT_MUL_Kilo | SIT_DIM_VAh  | SIT_Metering)
 
 // 装置配置数据
-#define SIT_DevOption     ( SIT_Type_Option | SIT_EVT_Event )
-#define SIT_DevConfig     ( SIT_Type_Config | SIT_EVT_Event )
+#define SIT_DevOption     ( SIT_Type_Option | SIT_EVT_DevLog )
+#define SIT_DevConfig     ( SIT_Type_Config | SIT_EVT_DevLog )
 
 // 软压板
-#define SIT_ProSwitch     (SIT_Type_Switch  | SIT_EVT_Alarm | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_ProSwitch     (SIT_Type_Switch  | SIT_EVT_DevLog  | SIT_EVT_Comm | SIT_VAT_BIN)
 // 保护定值
-#define SIT_ProHolding    (SIT_Type_Holding | SIT_EVT_Event )
+#define SIT_ProHolding    (SIT_Type_Holding | SIT_EVT_DevLog  | SIT_EVT_Comm)
 
 // 硬遥信
-#define SIT_DigInput      (SIT_Type_DigIn | SIT_EVT_Event| SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
-#define SIT_DigInput1     (SIT_Type_DigIn | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_DigInput      (SIT_Type_DigIn | SIT_EVT_AutoCtrl  | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_DigInner      (SIT_Type_DigIn | SIT_EVT_DevStatus | SIT_VAT_BIN)
 
 #define SIT_AlmOutput     (SIT_Type_Event)
 
 // 软遥信
 
 //事故软遥信
-#define SIT_FaultSign     (SIT_Type_Fault | SIT_EVT_Fault   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_FaultSign     (SIT_Type_Fault | SIT_EVT_AutoCtrl   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
 //#define SIT_CurrFault     (SIT_Type_Fault | SIT_EVT_Current | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
 // 逻辑事件信号
 //#define SIT_LogicSign     (SIT_Type_Fault | SIT_EVT_Logic   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN) 
 //告警软遥信
-#define SIT_AlarmSign     (SIT_Type_Fault | SIT_EVT_Alarm   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_AlarmSign     (SIT_Type_Alarm | SIT_EVT_AutoCtrl | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
 //事件软遥信
-#define SIT_EventSign     (SIT_Type_Event | SIT_EVT_Event   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_EventSign     (SIT_Type_Event | SIT_EVT_DevLog   | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
 
 // 继电器
-#define SIT_Relay         (SIT_Type_Trip | SIT_RDOnly | SIT_EVT_Event | SIT_VAT_BIN)
+#define SIT_Relay         (SIT_Type_Trip | SIT_EVT_AutoCtrl  | SIT_EVT_Disp | SIT_EVT_Comm | SIT_RDOnly | SIT_VAT_BIN)
+#define SIT_PartCtrl      (SIT_Type_Trip | SIT_EVT_DevStatus | SIT_EVT_Disp | SIT_EVT_Comm | SIT_RDOnly | SIT_VAT_BIN)
 
 // 系统事件
-#define SIT_HWE_FAULT      (SIT_Type_Fault  | SIT_EVT_Alarm | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
-#define SIT_CFG_FAULT      (SIT_Type_Event  | SIT_EVT_Alarm | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
-#define SIT_OPTION_LOG     (SIT_Type_Event  | SIT_EVT_Event | SIT_VAT_BIN  | SIT_EVT_Comm)
-#define SIT_OPTION_COM_LOG (SIT_Type_Event  | SIT_EVT_Event | SIT_EVT_Disp | SIT_VAT_BIN | SIT_EVT_Comm)
-#define SIT_RMTCTRL_LOG    (SIT_Type_Event  | SIT_EVT_Disp  | SIT_EVT_Comm | SIT_VAT_BIN | SIT_EVT_RmtCtrl)
-#define SIT_SG_ALL         (SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_HWE_FAULT      (SIT_Type_Fault | SIT_EVT_DevStatus | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_CFG_FAULT      (SIT_Type_Event | SIT_EVT_DevStatus | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_OPTION_LOG     (SIT_Type_Event | SIT_EVT_DevStatus  | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_OPTION_COM_LOG (SIT_Type_Event | SIT_EVT_DevStatus  | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_RMTCTRL_LOG    (SIT_Type_Even  | SIT_EVT_DevStatus | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_SG_ALL         (SIT_EVT_Comm   | SIT_VAT_BIN)
 
 // 通信事件
-#define SIT_COMM_EVENT    (SIT_Type_Event  | SIT_EVT_Alarm | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
+#define SIT_COMM_EVENT    (SIT_Type_Event  | SIT_EVT_DevStatus | SIT_EVT_Disp | SIT_EVT_Comm | SIT_VAT_BIN)
 //=============================================================================
 // 全局数据结构
 //-----------------------------------------------------------------------------
@@ -241,6 +247,8 @@ extern "C" {
 // 输入：uRegNum = 寄存器地址
 // 返回：0 = 寄存器不存在或寄存器无量纲  != 指向名称字符串的指针
 const char* RINF_GetDIMName( uint32_t uRegNum );
+
+const char* RINF_GetDIMNameEx( const TDevRegInfoItem* pProp);
 //-----------------------------------------------------------------------------
 // 获取量纲的名称 
 // 输入：uRegNum = 寄存器地址

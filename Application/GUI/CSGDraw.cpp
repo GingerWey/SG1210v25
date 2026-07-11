@@ -2,15 +2,20 @@
 //-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.cpp
- Version     : V1.09
+ Version     : V1.10
  By          : Wey. Silver Grid
 
  Description : CSG image drawing — unified Sim+MCU streaming path.
                Row-batch bitmap output: GUI_DrawBitmapExp (Sim) / FSMC burst (MCU).
-               MCU clip: pClipRect parameter (nullptr=full screen, &rect=clipped).
+               pClipRect honored on BOTH Sim and MCU (nullptr=full screen, &rect=clipped).
                Does NOT depend on emWin GUI_SetClipRect/GUI_GetClipRect.
 
- Date        : 2026.07.02 (V1.09 — strict Yoda conditions & mandatory braces for if/for/while)
+ Date        : 2026.07.09 (V1.10 — Sim path now honors pClipRect via emWin GUI_SetClipRect
+                          (set around the decode loop). Previously Sim ignored pClipRect,
+                          so a clipped background redraw overwrote the whole screen,
+                          erasing non-redrawn content. MCU path unchanged (manual clip).
+                          Affected GPDataListForm refresh and GPMenuForm _EraseSelArea.)
+              2026.07.02 (V1.09 — strict Yoda conditions & mandatory braces for if/for/while)
               2026.07.02 (V1.08 — v1.6 CRN bit7: crnReal=kCrnColorCountMask, hasTransparency=kCrnTransparentFlag)
               2026.07.02 (V1.07 — Yoda-style + brace-style compliance)
               2026.06.30 (V1.06 — pClipRect parameter replaces GUI_GetClipRect)
@@ -241,15 +246,17 @@ static inline uint16_t SaturateRgb565(uint16_t v, int sat) {
 void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
                      int picIndex, int saturation, const GUI_RECT* pClipRect)
 {
-#ifdef __vmSIMULATOR__
-    (void)pClipRect;    // Sim: emWin handles clip internally via GUI_SetClipRect
-#endif
-  
-    if (nullptr == pPic || nullptr == pPic->pData) { return; }
-    if (pPic->Type != ID_CSG) { return; }
 
-    if (10 > saturation) { saturation = 10; }
-    if (100 < saturation) { saturation = 100; }
+    if (nullptr == pPic || pPic->pData == nullptr || pPic->Type != ID_CSG) {
+        return;
+    }
+
+    if (10 > saturation) {
+        saturation = 10;
+    }
+    if (100 < saturation) {
+        saturation = 100;
+    }
 
     const uint8_t* csgData = static_cast<const uint8_t*>(pPic->pData);
 
@@ -258,8 +265,8 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
     const uint8_t* compData = nullptr;
     size_t         compSize = 0;
 
-    if (!ParseCsgPicture(csgData, pPic->Size, picIndex,
-                         &pic, &compData, &compSize)) {
+    if (false == ParseCsgPicture(csgData, pPic->Size, picIndex,
+                                 &pic, &compData, &compSize)) {
         return;
     }
 
@@ -347,6 +354,16 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
     state.stream     = compData + (pic.dpos - kCsgPictureHeaderSize);
     state.streamSize = compSize - (pic.dpos - kCsgPictureHeaderSize);
 
+#ifdef __vmSIMULATOR__
+    // Sim: emWin honors GUI_SetClipRect for all drawing primitives (WIN32
+    // driver). Set it once around the decode loop so a clipped redraw only
+    // touches pClipRect — no manual row/column slicing needed. Restored to
+    // nullptr after the loop. MCU does NOT use this (CSG bypasses emWin).
+    if (nullptr != pClipRect) {
+        GUI_SetClipRect(pClipRect);
+    }
+#endif
+
     // 7. Decode + draw loop — row-at-a-time via bitmap
     int row = 0;
     while (state.pixelsDecoded < totalPixels) {
@@ -359,15 +376,19 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
 
 #ifdef __vmSIMULATOR__
         // ---- Sim: hybrid draw ----
+        //   Clipping to pClipRect is handled by emWin via GUI_SetClipRect (set
+        //   around the loop below) — efficient, and correct on Sim where the
+        //   WIN32 driver honors the clip for GUI_DrawBitmapExp / GUI_DrawPixel.
+        //   MCU cannot use this (CSG bypasses emWin) → MCU path clips manually.
         //   Rows with transparent pixels: per-pixel draw, skip transparent.
         //   Rows without transparent pixels: fast GUI_DrawBitmapExp.
         if (true == hasTransparency) {
             uint32_t transp32 = Rgb565ToSim(transpRgb565);
             bool bHasTransp = false;
             for (int i = 0; i < n && false == bHasTransp; ++i) {
-              if( transp32 == Rgb565ToSim( CrmToRgb565( outBuf + i * bpc, colorMode ) ) ) {
+                if (transp32 == Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode))) {
                     bHasTransp = true;
-                  }
+                }
             }
             if (true == bHasTransp) {
                 // Slow path: per-pixel draw, skip transparent → background shows through
@@ -376,7 +397,6 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
                     if (v565 == transpRgb565) {
                         continue; // skip transparent
                     }
-
                     uint32_t c = Rgb565ToSim(v565);
                     GUI_SetColor(c & 0x00FFFFFF);  // strip alpha, keep RGB
                     GUI_DrawPixel(x0 + i, y0 + row);
@@ -386,10 +406,11 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
                 uint32_t* bmp32 = static_cast<uint32_t*>(bmpBuf);
                 if (true == doSat && 0 == crn) {
                     for (int i = 0; i < n; ++i) {
-                        bmp32[i] = Rgb565ToSim(SaturateRgb565(CrmToRgb565(outBuf + i*bpc, colorMode), saturation));
+                        bmp32[i] = Rgb565ToSim(SaturateRgb565(
+                            CrmToRgb565(outBuf + i * bpc, colorMode), saturation));
                     }
                 } else {
-                  for( int i = 0; i < n; ++i ) {
+                    for (int i = 0; i < n; ++i) {
                         bmp32[i] = Rgb565ToSim(CrmToRgb565(outBuf + i * bpc, colorMode));
                     }
                 }
@@ -543,6 +564,13 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
         SetRSTSrc(RRS_GUITASK);
 #endif
     }
+
+#ifdef __vmSIMULATOR__
+    // Restore emWin clip to default (no clip)
+    if (nullptr != pClipRect) {
+        GUI_SetClipRect(nullptr);
+    }
+#endif
 
     // Free DEFLATE intermediate buffer if allocated
     if (0 != state.deflateBufHandle) {

@@ -971,9 +971,14 @@
               <FilePath>..\Application\GUI\GPMenuForm.cpp</FilePath>
             </File>
             <File>
-              <FileName>GPEventBrowserForm.cpp</FileName>
+              <FileName>GPDataListForm.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GPEventBrowserForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\GPDataListForm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GPLogListForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\GPLogListForm.cpp</FilePath>
             </File>
             <File>
               <FileName>GPDevInfoForm.cpp</FileName>

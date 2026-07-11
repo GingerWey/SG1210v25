@@ -330,12 +330,12 @@ typedef enum tagDevRegListClass
 typedef enum tagEventLogType
 {
   mltNew         = 0,       // 最新的事件 
-  mltEvent,                 // 事件报告
-  mltAlarm,                 // 告警
-  mltFault,                 // 事故
-//  mltCurProt,               // 电流故障
-//  mltRmtCtrl,               // 遥控
-//  mltLogic                  // 逻辑事件
+  mltDeviceLog,             // 事件报告
+  mltDevStatus,             // 告警
+  mltAutoCtrl,              // 事故
+//  mltCurProt,             // 电流故障
+//  mltRmtCtrl,             // 遥控
+//  mltLogic                // 逻辑事件
 } TEventLogType;
 //-----------------------------------------------------------------------------
 // 报告的弹窗和存贮特性

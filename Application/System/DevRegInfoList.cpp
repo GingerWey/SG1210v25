@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 /*
  File        : DevRegInfoList.cpp
  Version     : V1.01
@@ -37,6 +37,10 @@
 //-----------------------------------------------------------------------------
 #define RIP_FREQDISP   0, 0, 45,       55,        1,  1, 5, 2
 #define RIP_VOLTDISP   0, 0, MIN_Volt, MAX_Volt,  1,  1, 6, 2
+#define RIP_CURRDISP   0, 0, 0,        100,       1,  1, 6, 2
+#define RIP_POWRDISP   0, 0, 0,       1000,       1,  1, 6, 1
+#define RIP_TEMPDISP   0, 0, -50,     50,         1, 1,  5, 1
+#define RIP_PERCDISP   0, 0, 0,       100,        1, 1,  5, 1
 
 static constexpr TDevRegInfoItem pProtDataRegInfos[] =
 {
@@ -61,18 +65,28 @@ const TDevRegInfoList SUTCProtDataRegInfoList =
 //-----------------------------------------------------------------------------
 static constexpr TDevRegInfoItem pMeasDataRegInfos[] =
 {
-   //Ident Name      RegNum             MMI          Evt Misc Property
-   { 0,     "Fin",    REG_RL_ACFreq,   RIP_FREQDISP, 0,  0,  SIT_Freq   }
-  ,{ 0,     "Fout",   REG_RL_VOFreq,   RIP_FREQDISP, 0,  0,  SIT_Freq   }
-  ,{ 0,     "Uin",    REG_RL_Uin,      RIP_VOLTDISP, 0,  0,  SIT_Ux }
-  ,{ 0,     "Uout",   REG_RL_Uout,     RIP_VOLTDISP, 0,  0,  SIT_Ux }
+   //Ident          Name      RegNum                  MMI          Evt Misc Property
+   { idMeasName01,  "Rtemp",  REG_RL_RTC_TEMP,        RIP_TEMPDISP, 0, 0,   SIT_Temp }
+  ,{ idMeasName02,  "Rvbat",  REG_RL_RTC_Vbat,        RIP_VOLTDISP, 0, 0,   SIT_Ux   }
+  ,{ idMeasName03,  "Fin",    REG_RL_ACFreq,          RIP_FREQDISP, 0, 0,   SIT_Freq }
+  ,{ idMeasName04,  "Fout",   REG_RL_VOFreq,          RIP_FREQDISP, 0, 0,   SIT_Freq }
+  ,{ idMeasName05,  "Pchrg",  REG_RL_BCHRG_Pbus,      RIP_POWRDISP, 0, 0,   SIT_Px   }
+  ,{ idMeasName06,  "Ichrg",  REG_RL_BCHRG_Ibus,      RIP_CURRDISP, 0, 0,   SIT_Ix   }
+  ,{ idMeasName07,  "Ichmax", REG_RL_BCHRG_Ibus_Max,  RIP_CURRDISP, 0, 0,   SIT_Ix   }
+  ,{ idMeasName08,  "Pdisch", REG_RL_BTOUT_Pbus,      RIP_POWRDISP, 0, 0,   SIT_Px   }
+  ,{ idMeasName09,  "Idisch", REG_RL_BTOUT_Ibus,      RIP_CURRDISP, 0, 0,   SIT_Ix   }
+  ,{ idMeasName10,  "Idcmax", REG_RL_BTOUT_Ibus_Max,  RIP_CURRDISP, 0, 0,   SIT_Ix   }
+  ,{ idMeasName11,  "Blevel", REG_RL_BAT_CAPLevel,    RIP_TEMPDISP, 0, 0,   SIT_Perc }
+  ,{ idMeasName12,  "Btemp",  REG_RL_BAT_TEMPERATRUE, RIP_PERCDISP, 0, 0,   SIT_Temp }
+  ,{ idMeasName13,  "Uin",    REG_RL_Uin,             RIP_VOLTDISP, 0, 0,   SIT_Ux   }
+  ,{ idMeasName14,  "Uout",   REG_RL_Uout,            RIP_VOLTDISP, 0, 0,   SIT_Ux   }
 };
 #define NUM_pMeasDataRegInfos         NUM_Elements(pMeasDataRegInfos)
 //-----------------------------------------------------------------------------
 // LVCC测量数据寄存器描述表
 const TDevRegInfoList SUTCMeasDataRegInfoList =
 {
-  REG_RL_ACFreq,
+  REG_RL_RTC_TEMP,
   REG_RL_Uout,
   NUM_pMeasDataRegInfos,
   pMeasDataRegInfos
@@ -178,12 +192,12 @@ const TDevRegInfoList DevConfigRegInfoList =
 static constexpr TDevRegInfoItem   pEventLogRegInfos[] =
 {
    // Ident         Name   RegNum                    Reg_Disp        Evt       Misc  Property
-   { idEventName00,   0,   REG_EH_POWEROFF,          RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
-  ,{ idEventName01,   0,   REG_EH_POWERON,           RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
-  ,{ idEventName02,   0,   REG_EH_POWERON_PWR,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
-  ,{ idEventName03,   0,   REG_EH_POWERON_WDG,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
-  ,{ idEventName04,   0,   REG_EH_POWERON_SFT,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
-  ,{ idEventName08,   0,   REG_EH_WDG_ACTIVE,        RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_Event | SIT_VAT_BIN }
+   { idEventName00,   0,   REG_EH_POWEROFF,          RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
+  ,{ idEventName01,   0,   REG_EH_POWERON,           RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
+  ,{ idEventName02,   0,   REG_EH_POWERON_PWR,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
+  ,{ idEventName03,   0,   REG_EH_POWERON_WDG,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
+  ,{ idEventName04,   0,   REG_EH_POWERON_SFT,       RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
+  ,{ idEventName08,   0,   REG_EH_WDG_ACTIVE,        RIP_SIGNAL,  EVTP_OPERATE, 0,  SIT_EVT_DevLog | SIT_VAT_BIN }
   ,{ idEventName09,   0,   REG_EH_HSE_FAULT,         RIP_SIGNAL,  EVTP_HWFAULT, 0,  SIT_HWE_FAULT }
   ,{ idEventName10,   0,   REG_EH_LSE_FAULT,         RIP_SIGNAL,  EVTP_HWFAULT, 0,  SIT_HWE_FAULT }
   ,{ idEventName11,   0,   REG_EH_RCC_FAULT,         RIP_SIGNAL,  EVTP_HWFAULT, 0,  SIT_HWE_FAULT }

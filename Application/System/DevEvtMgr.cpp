@@ -26,6 +26,9 @@
 
 #ifndef __vmSIMULATOR__
   #include "rtc.h"
+  #include "FreeRTOS.h"
+  #include "queue.h"            // FreeRTOS queue (xQueueSend / xQueueSendFromISR)
+  #include "cmsis_os2.h"
 #else
   #include <WTypesbase.h>
   #include <Windows.h>
@@ -37,7 +40,7 @@
 // 本地宏
 //-----------------------------------------------------------------------------
 // 用于通讯过滤的宏组合
-#define NES_COMMs    (NES_CAN_MASK + NES_UART_MASK + NES_NETSKT_MASK)
+#define NES_COMMs    (NES_UART_MASK + NES_NETSKT_MASK)
 
 //#ifndef nullptr
 //  #define  nullptr  null
@@ -74,6 +77,34 @@ typedef void* (*PROC_CacheItem)( struct tagEventLogCacheItem *, void* );
 //-----------------------------------------------------------------------------
 static TEventLogCache EventLogCache;
 static TEventLogCache DispEventLogCache;
+
+//=============================================================================
+// 并发保护：事件缓冲区在多任务间共享（appTask 追加/保存，通讯任务取走）
+// - 任务级访问用互斥（osMutex，递归+优先级继承）
+// - 中断级追加经 EVTMGR_PostEvent 入队，由 appTask 的 EVTMGR_DrainEvents 排空
+//=============================================================================
+#ifndef __vmSIMULATOR__
+  static osMutexId_t s_lock = nullptr;
+  #define EVTMGR_LOCK()   do { if (nullptr != s_lock) (void)osMutexAcquire(s_lock, osWaitForever); } while (0)
+  #define EVTMGR_UNLOCK() do { if (nullptr != s_lock) (void)osMutexRelease(s_lock); } while (0)
+#else
+  #define EVTMGR_LOCK()   ((void)0)
+  #define EVTMGR_UNLOCK() ((void)0)
+#endif
+
+// 事件投递队列（ISR→任务的延迟路径）
+#ifndef __vmSIMULATOR__
+  #define EVTMGR_QUEUE_SIZE   32
+  // EvtItem carries the timestamp captured at post time (ISR or task),
+  // so the event log reflects WHEN the event occurred, not when the
+  // queue was drained.
+  struct EvtItem {
+    uint32_t            uRegNum;
+    uint32_t            uAction;
+    TEventLogSummary    Pre;   // Pre.Time filled at post time
+  };
+  static QueueHandle_t s_evtQueue = nullptr;
+#endif
 //=============================================================================
 // 全局方法引用
 //-----------------------------------------------------------------------------
@@ -128,24 +159,24 @@ static void* saveNewEvent( struct tagEventLogCacheItem *pEvent, void* )
   switch( SIT_GetEvtType( pEvent->pRegInfo->Property ) )
     {
     // 事件
-    case SIT_EVT_Event:
+    case SIT_EVT_DevLog:
       {
-      pEvent->EventLog.Summary.State.Type = mltEvent;
-      FIX_SaveEvtLogItem(  mltEvent, &(pEvent->EventLog.Summary) );
+      pEvent->EventLog.Summary.State.Type = mltDeviceLog;
+      FIX_SaveEvtLogItem(  mltDeviceLog, &(pEvent->EventLog.Summary) );
       break;
       }
     // 报警
-    case SIT_EVT_Alarm:
+    case SIT_EVT_DevStatus:
       {
-      pEvent->EventLog.Summary.State.Type = mltAlarm;
-      FIX_SaveEvtLogItem(  mltAlarm, &(pEvent->EventLog) );
+      pEvent->EventLog.Summary.State.Type = mltDevStatus;
+      FIX_SaveEvtLogItem(  mltDevStatus, &(pEvent->EventLog) );
       break;
       }
     // 事故
-    case SIT_EVT_Fault:
+    case SIT_EVT_AutoCtrl:
       {
-      pEvent->EventLog.Summary.State.Type = mltFault;
-      FIX_SaveEvtLogItem(  mltFault, &(pEvent->EventLog)  );
+      pEvent->EventLog.Summary.State.Type = mltAutoCtrl;
+      FIX_SaveEvtLogItem(  mltAutoCtrl, &(pEvent->EventLog)  );
       break;
       }
 
@@ -154,7 +185,7 @@ static void* saveNewEvent( struct tagEventLogCacheItem *pEvent, void* )
     case SIT_EVT_Current:
       {
       pEvent->EventLog.Summary.State.Type = mltCurProt;
-      FIX_SaveEvtLogItem(  mltFault, &(pEvent->EventLog)  );
+      FIX_SaveEvtLogItem(  mltAutoCtrl, &(pEvent->EventLog)  );
       break;
       }
 #endif
@@ -164,7 +195,7 @@ static void* saveNewEvent( struct tagEventLogCacheItem *pEvent, void* )
     case SIT_EVT_RmtCtrl:
       {
       pEvent->EventLog.Summary.State.Type = mltRmtCtrl;
-      FIX_SaveEvtLogItem(  mltEvent, &(pEvent->EventLog)  );
+      FIX_SaveEvtLogItem(  mltDeviceLog, &(pEvent->EventLog)  );
       break;
       }
 #endif
@@ -174,7 +205,7 @@ static void* saveNewEvent( struct tagEventLogCacheItem *pEvent, void* )
     case SIT_EVT_Logic:
       {
       pEvent->EventLog.Summary.State.Type = mltLogic;
-      FIX_SaveEvtLogItem(  mltAlarm, &(pEvent->EventLog)  );
+      FIX_SaveEvtLogItem(  mltDevStatus, &(pEvent->EventLog)  );
       break;
       }
 #endif
@@ -332,13 +363,13 @@ void* forEach_Backward( PROC_CacheItem pItemProc,
 //  switch( uType )
 //    {
 //    case mltCurProt:
-//      uSaveType = mltFault;
+//      uSaveType = mltAutoCtrl;
 //      break;
 //    case mltRmtCtrl:
-//      uSaveType = mltEvent;
+//      uSaveType = mltDeviceLog;
 //      break;
 //    case mltLogic:
-//      uSaveType = mltAlarm;
+//      uSaveType = mltDevStatus;
 //      break;
 //    default:
 //      return 0;
@@ -369,13 +400,13 @@ void* forEach_Backward( PROC_CacheItem pItemProc,
 //  switch( uType )
 //    {
 //    case mltCurProt:
-//      uSaveType = mltFault;
+//      uSaveType = mltAutoCtrl;
 //      break;
 //    case mltRmtCtrl:
-//      uSaveType = mltEvent;
+//      uSaveType = mltDeviceLog;
 //      break;
 //    case mltLogic:
-//      uSaveType = mltAlarm;
+//      uSaveType = mltDevStatus;
 //      break;
 //    default:
 //      return nullptr;
@@ -412,6 +443,18 @@ void EVTMGR_Init(void)
   memset( &DispEventLogCache, 0, sizeof(DispEventLogCache) );
 
   SetNewEvents(0);
+
+#ifndef __vmSIMULATOR__
+  if (nullptr == s_lock) {
+    static const osMutexAttr_t attr = { "EVTMGR",
+                                        osMutexRecursive | osMutexPrioInherit,
+                                        nullptr, 0U };
+    s_lock = osMutexNew(&attr);
+  }
+  if (nullptr == s_evtQueue) {
+    s_evtQueue = xQueueCreate(EVTMGR_QUEUE_SIZE, sizeof(EvtItem));
+  }
+#endif
 }
 //-----------------------------------------------------------------------------
 // 追加事件记录
@@ -419,8 +462,11 @@ void EVTMGR_Init(void)
 // 输入：
 //   uRegNum：发生报告的寄存器
 //   uAction：报告的行为 TRUE = 0->1;  FALSE = 1->0
-void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
+// 内部实现：pPre != nullptr 时用其 Time 替代 RTC_FillEventTime（ISR 延迟路径）
+static void _AppendEventEx( uint32_t uRegNum, uint32_t uAction,
+                            const TEventLogSummary* pPre )
 {
+  (void)pPre;  // used below
 
   // 预判状态是否变位？
   if( REG_STATE == REG_TYPE(uRegNum) )
@@ -454,6 +500,9 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
   // 或 的TDevRegInfoItem中Property属性没有说事件类型
   DEV_ASSERT( nullptr == pRegInfo, GFC_ErrRegNum );
 #endif
+  // 显式守卫：非 assert 构建下也避免空指针解引用
+  if( nullptr == pRegInfo )
+    return;
 
   // 该事件无存贮属性，直接返回
   //if( 0 == SIT_GetEvtType(pRegInfo->Property) )
@@ -469,6 +518,11 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
   DEV_ASSERT( NUM_EVENT_DATA < pEvtProp->NbrOfData, // Wey.
               GFC_ErrParam );
 #endif
+  // 显式守卫：非 assert 构建下也避免空指针解引用
+  if( nullptr == pEvtProp )
+    return;
+
+  EVTMGR_LOCK();
 
   // 搜索可用的存贮位置
   uint32_t uNewPos;
@@ -513,8 +567,11 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
       pEvent->NewLogMarks |= NES_DISP;
     }
 
-  //
-  RTC_FillEventTime( &(pEvent->EventLog.Summary) );
+  // 时间戳：ISR 延迟路径用投递时捕获的 pPre->Time；直连路径用 RTC 实时填充
+  if( nullptr != pPre )
+    pEvent->EventLog.Summary.Time = pPre->Time;
+  else
+    RTC_FillEventTime( &(pEvent->EventLog.Summary) );
   pEvent->EventLog.Summary.State.RegNum = uRegNum;
   pEvent->EventLog.Summary.State.Action = (STATE_TRUE == uAction)? EVENT_TRUE : EVENT_FALSE;
   pEvent->pRegInfo = pRegInfo;
@@ -526,8 +583,10 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
     SetNewEvents(NES_COMMs);
     }
 
-  // 填写现场数据
-  for( uint32_t uIdx = 0; uIdx < pEvtProp->NbrOfData; uIdx++ )
+  // 填写现场数据（clamp 到 NUM_EVENT_DATA，防止 NbrOfData 越界写 FieldData）
+  for( uint32_t uIdx = 0;
+       uIdx < pEvtProp->NbrOfData && uIdx < NUM_EVENT_DATA;
+       uIdx++ )
     {
     if( 0 != pEvtProp->FieldDataReg[uIdx] )
       pEvent->EventLog.FieldData[uIdx] = DevReg_Read( pEvtProp->FieldDataReg[uIdx] );
@@ -564,6 +623,13 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
       DispEventLogCache.Count++;
     }
 
+  if( DispEventLogCache.Count > 0 )   //wzj 修改只有保存时才检查弹出报告
+    {
+    SetTodoTask( RTT_DISP_EVENT );
+    }
+
+  EVTMGR_UNLOCK();
+
 #if WAVELOGGER_EN > 0
   // Wey. 2021.10.20 将触发录波交给事件处理器
   if( STATE_TRUE == uAction &&
@@ -574,11 +640,12 @@ void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
   // Wey. 2021.10.20 将操作继电器交给事件处理器
   if( 0 != (pRegInfo->Property & SIT_RELAY_CTRL) )    // 需要操作继电器
     SetTodoTask ( RTT_RELAY_TRIP );
-    
-  if( DispEventLogCache.Count > 0 )   //wzj 修改只有保存时才检查弹出报告
-    {
-    SetTodoTask( RTT_DISP_EVENT );
-    }
+}
+
+// 公共接口：直接追加（任务级，时间戳由 RTC 实时填充）
+void EVTMGR_AppendEvent( uint32_t uRegNum, uint32_t uAction )
+{
+  _AppendEventEx( uRegNum, uAction, nullptr );
 }
 //-----------------------------------------------------------------------------
 // 追加操作记录
@@ -595,6 +662,10 @@ void EVTMGR_AppendOpLog( uint32_t uRegNum, uint32_t uValue )
   // 没定义寄存器的TDevRegInfoItem，  或 的TDevRegInfoItem中Property属性没有说事件类型
   DEV_ASSERT( nullptr == pRegInfo, GFC_ErrRegNum );
 #endif
+  if( nullptr == pRegInfo )
+    return;
+
+  EVTMGR_LOCK();
 
   // 搜索可用的存贮位置
   uint32_t uNewPos;
@@ -631,13 +702,17 @@ void EVTMGR_AppendOpLog( uint32_t uRegNum, uint32_t uValue )
 
   //
   SetNewEvents(NES_COMMs);
+
+  EVTMGR_UNLOCK();
 }
 //-----------------------------------------------------------------------------
 // 保存事件记录
 void EVTMGR_SaveEvent(void)
 {
 
+  EVTMGR_LOCK();
   forEach_Forward( saveNewEvent, NES_SAVE, 0 );
+  EVTMGR_UNLOCK();
 
   // 清标志
   ClrTodoTask( RTT_SAVE_EVENT );
@@ -663,7 +738,9 @@ uint32_t EVTMGR_GetNewEventCount( uint32_t uFilter )
 
   uint32_t uCount = 0;
 
+  EVTMGR_LOCK();
   forEach_Forward( countEvents, uFilter, &uCount );
+  EVTMGR_UNLOCK();
 
   if( 0 != (uFilter & NES_COMMs) && 0 == uCount )
     ClrNewEventSign( uFilter );
@@ -687,15 +764,15 @@ uint32_t EVTMGR_GetEventCount( TEventLogType uType )
       uCount = DispEventLogCache.Count;
       break;
 
-    case mltEvent:
+    case mltDeviceLog:
       uCount = LogIndexer.EventLogs.Count;
       break;
 
-    case mltAlarm:
+    case mltDevStatus:
       uCount = LogIndexer.AlarmLogs.Count;
       break;
 
-    case mltFault:
+    case mltAutoCtrl:
       uCount = LogIndexer.FaultLogs.Count;
       break;
 
@@ -750,9 +827,9 @@ const TEventLogItem* EVTMGR_GetEventItem( TEventLogType  uType,
       break;
       }
 
-    case mltEvent:
-    case mltAlarm:
-    case mltFault:
+    case mltDeviceLog:
+    case mltDevStatus:
+    case mltAutoCtrl:
       {
       if( 0u == FIX_ReadEvtLogItem( uType, uIndex, pEvent, ERD_BACKWARD ) )
         pRes = pEvent;
@@ -830,6 +907,7 @@ uint32_t EVTMGR_GetEventDesp( TEventWithProperty *pEvent )
 void EVTMGR_ClearNewEventMarks( uint32_t uFilter )
 {
 
+  EVTMGR_LOCK();
   if( 0 != (uFilter & NES_DISP) )
     {
     DispEventLogCache.Count = 0;
@@ -842,6 +920,7 @@ void EVTMGR_ClearNewEventMarks( uint32_t uFilter )
 #else
                      (void*)(uint64_t)uFilter );
 #endif
+  EVTMGR_UNLOCK();
 }
 //-----------------------------------------------------------------------------
 // 按 时间 搜索新记录
@@ -871,19 +950,26 @@ const TEventLogItem* EVTMGR_Search( uint32_t uFilter,
 
   // 按 iOrder 选择搜索方向
   void  *pvRes;
+  EVTMGR_LOCK();
   if( ERD_BACKWARD == (uOptions & ERD_BACKWARD) )
     pvRes = forEach_Backward( fetchEvent, uFilter, pucOffset );
   else
     pvRes = forEach_Forward ( fetchEvent, uFilter, pucOffset );
 
   if( nullptr == pvRes )
+    {
+    EVTMGR_UNLOCK();
     return nullptr;
+    }
 
   struct tagEventLogCacheItem *pItem = (struct tagEventLogCacheItem*)pvRes;
 
   if( uOptions & ERD_CLEARMARK )
     pItem->NewLogMarks &= ~uFilter;
 
+  // 注意：返回的指针指向环形缓冲内部，调用方应立即拷贝使用，
+  //       不要在下次 EVTMGR 操作后继续引用（可能被覆盖）。
+  EVTMGR_UNLOCK();
   return &(pItem->EventLog);
 }
 //-----------------------------------------------------------------------------
@@ -896,13 +982,81 @@ const TEventLogItem* EVTMGR_Search( uint32_t uFilter,
 const TEventLogItem* EVTMGR_Fetch( uint32_t uFilter )
 {
 
+  EVTMGR_LOCK();
   void *pvRes = forEach_Forward( fetchEvent, uFilter, nullptr );
   if( nullptr == pvRes )
+    {
+    EVTMGR_UNLOCK();
     return nullptr;
+    }
 
   struct tagEventLogCacheItem *pItem = (struct tagEventLogCacheItem*)pvRes;
   pItem->NewLogMarks &= ~uFilter;
 
+  // 注意：返回的指针指向环形缓冲内部，调用方应立即拷贝使用。
+  EVTMGR_UNLOCK();
   return &(pItem->EventLog);
+}
+//-----------------------------------------------------------------------------
+// 投递事件到队列（任务级）
+// 任务上下文调用：入队，由 appTask 的 EVTMGR_DrainEvents 排空
+// Sim（单线程）：直接调用 AppendEvent
+void EVTMGR_PostEvent( uint32_t uRegNum, uint32_t uAction )
+{
+#ifdef __vmSIMULATOR__
+  EVTMGR_AppendEvent( uRegNum, uAction );
+#else
+  if( nullptr == s_evtQueue )
+    {
+    EVTMGR_AppendEvent( uRegNum, uAction );   // 队列未就绪，回退直连
+    return;
+    }
+  // 捕获当前时间戳（ms 精度），随事件入队
+  EvtItem item;
+  item.uRegNum  = uRegNum;
+  item.uAction  = uAction;
+  memset( &item.Pre, 0, sizeof(item.Pre) );
+  RTC_FillEventTime( &item.Pre );
+  (void)xQueueSend( s_evtQueue, &item, 0U );
+#endif
+}
+//-----------------------------------------------------------------------------
+// 投递事件到队列（中断级，FreeRTOS FromISR）
+// 在 ISR 中捕获当前时间戳（ms 精度），随事件入队；
+// 排空时用该时间戳填入事件记录，保证时间反映事件发生时刻而非排空时刻。
+void EVTMGR_PostEventFromISR( uint32_t uRegNum, uint32_t uAction,
+                              void *pxHigherPriorityTaskWoken )
+{
+#ifndef __vmSIMULATOR__
+  if( nullptr != s_evtQueue )
+    {
+    EvtItem item;
+    item.uRegNum  = uRegNum;
+    item.uAction  = uAction;
+    memset( &item.Pre, 0, sizeof(item.Pre) );
+    RTC_FillEventTime( &item.Pre );    // ISR 中读 RTC（STM32 内存映射，ISR 安全）
+    BaseType_t xHigher = pdFALSE;
+    (void)xQueueSendFromISR( s_evtQueue, &item, &xHigher );
+    if( nullptr != pxHigherPriorityTaskWoken )
+      *(BaseType_t*)pxHigherPriorityTaskWoken = xHigher;
+    }
+#else
+  (void)uRegNum; (void)uAction; (void)pxHigherPriorityTaskWoken;
+#endif
+}
+//-----------------------------------------------------------------------------
+// 排空事件队列（任务级，appTask 循环周期调用）
+// 用队列项中捕获的时间戳（pPre）填入事件记录，保证时间精度。
+void EVTMGR_DrainEvents( void )
+{
+#ifndef __vmSIMULATOR__
+  if( nullptr == s_evtQueue )
+    return;
+  EvtItem item;
+  while( pdPASS == xQueueReceive( s_evtQueue, &item, 0U ) )
+    {
+    _AppendEventEx( item.uRegNum, item.uAction, &item.Pre );
+    }
+#endif
 }
 //-----------------------------------------------------------------------------

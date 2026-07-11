@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 /*
  File        : DevRegs.h
  Version     : V1.10
@@ -547,14 +547,14 @@ extern "C" {
 #define REG_RL_BCHRG_Pbus         (REG_RL_BATTERY + 2)
 #define REG_RL_BCHRG_Ibus         (REG_RL_BATTERY + 3)
 #define REG_RL_BCHRG_Ibus_Max     (REG_RL_BATTERY + 4)
-#define REG_RL_BCHRG_Level        (REG_RL_BATTERY + 5)   // 按%标定的电池电量
 
-#define REG_RL_BTOUT_Ushunt       (REG_RL_BATTERY + 6)
-#define REG_RL_BTOUT_Ubus         (REG_RL_BATTERY + 7)
-#define REG_RL_BTOUT_Pbus         (REG_RL_BATTERY + 8)
-#define REG_RL_BTOUT_Ibus         (REG_RL_BATTERY + 9)
-#define REG_RL_BTOUT_Ibus_Max     (REG_RL_BATTERY + 10)
+#define REG_RL_BTOUT_Ushunt       (REG_RL_BATTERY + 5)
+#define REG_RL_BTOUT_Ubus         (REG_RL_BATTERY + 6)
+#define REG_RL_BTOUT_Pbus         (REG_RL_BATTERY + 7)
+#define REG_RL_BTOUT_Ibus         (REG_RL_BATTERY + 8)
+#define REG_RL_BTOUT_Ibus_Max     (REG_RL_BATTERY + 9)
 
+#define REG_RL_BAT_CAPLevel       (REG_RL_BATTERY + 10)  // 按%标定的电池电量
 #define REG_RL_BAT_TEMPERATRUE    (REG_RL_BATTERY + 11)
 
 // 逆变器调整输出电压的中间过程

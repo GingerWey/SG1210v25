@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.cpp
- Version     : V1.01
+ Version     : V1.02
  By          : Wey. Silver Grid
 
  Description : GFormCentra system implementation.
@@ -9,6 +9,9 @@
 
  Date        : 2026.06.24 (V1.00 — initial implementation)
               2026.06.25 (V1.01 — added TouchEvent for touch screen support)
+              2026.07.08 (V1.02 — navigation lifecycle messages GM_FORM_ACTIVATED/
+                          DEACTIVATED, GM_CLOSE_QUERY veto on PopForm,
+                          GM_IDLE_EXPIRE query via QueryIdleExpire)
 */
 //-----------------------------------------------------------------------------
 #include "GFormCentra.h"
@@ -92,6 +95,36 @@ int FindRegIdxByForm(const GWinForm* form)
     return -1;
 }
 
+/// Send a lifecycle notification message to a form's pMsg callback.
+/// Called with lock held.
+void NotifyForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
+{
+    if (nullptr == rec || nullptr == rec->callbacks ||
+        nullptr == rec->callbacks->pMsg) {
+        return;
+    }
+    GM_MESSAGE msg = {};
+    msg.MsgId = msgId;
+    msg.Param = param;
+    rec->callbacks->pMsg(&msg);
+}
+
+/// Send a query message to a form. Returns true if the form vetoed
+/// by filling Data.v with a value greater than zero.
+/// Called with lock held.
+bool QueryForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
+{
+    if (nullptr == rec || nullptr == rec->callbacks ||
+        nullptr == rec->callbacks->pMsg) {
+        return false;
+    }
+    GM_MESSAGE msg = {};
+    msg.MsgId = msgId;
+    msg.Param = param;
+    rec->callbacks->pMsg(&msg);
+    return (msg.Data.v > 0);
+}
+
 /// Activate a form: push onto stack, call pInit+pShow, update state.
 /// Called with lock held.
 bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
@@ -116,6 +149,9 @@ bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
     if (rec->callbacks->pShow != nullptr) {
         rec->callbacks->pShow(para);
     }
+
+    // Notify the newly activated form
+    NotifyForm(rec, GM_FORM_ACTIVATED);
     return true;
 }
 
@@ -332,6 +368,15 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
             return;
         }
 
+        // GM_CLOSE_QUERY: allow the current form to veto being closed
+        // (e.g. unsaved edits). A veto is signaled by Data.v > 0.
+        if (QueryForm(s_pCurrent, GM_CLOSE_QUERY)) {
+            return;
+        }
+
+        // Notify the outgoing form it is being deactivated
+        NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
+
         // Snapshot close callback
         TGWVoidProc closeFn = nullptr;
         if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
@@ -344,10 +389,12 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
 
         // Restore previous and get its show callback
         TGWVoidProc showFn = nullptr;
+        const gfc::FormRecord* lowerRec = nullptr;
         int prevIdx = FindRegIdx(s_stack[s_stackTop - 1]);
         if (prevIdx >= 0) {
             s_pCurrent  = &s_registry[prevIdx].record;
             s_currentId = s_stack[s_stackTop - 1];
+            lowerRec    = s_pCurrent;
             if (s_pCurrent->callbacks != nullptr) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
@@ -356,6 +403,9 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
         // Execute callbacks outside of critical section concerns
         if (closeFn != nullptr) closeFn(para);
         if (showFn  != nullptr) showFn(para);
+
+        // Notify the restored lower form it has been activated
+        NotifyForm(lowerRec, GM_FORM_ACTIVATED);
         break;
     }
 
@@ -365,6 +415,11 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
         if (s_stackTop > 0 && s_pCurrent != nullptr &&
             s_pCurrent->callbacks != nullptr) {
             closeFn = s_pCurrent->callbacks->pClose;
+        }
+
+        // Notify the outgoing form it is being deactivated
+        if (s_stackTop > 0) {
+            NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
         }
 
         // Pop current from stack
@@ -377,7 +432,7 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
 
         if (closeFn != nullptr) closeFn(para);
 
-        // Find and activate new form
+        // Find and activate new form (ActivateForm sends GM_FORM_ACTIVATED)
         if (id != kFormIdInvalid) {
             int idx = FindRegIdx(id);
             if (idx >= 0) {
@@ -393,6 +448,11 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
         int idx = FindRegIdx(id);
         if (idx < 0) return;
 
+        // Notify the current top form it is being pushed down
+        if (s_stackTop > 0) {
+            NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
+        }
+
         ActivateForm(id, &s_registry[idx].record, para);
         break;
     }
@@ -403,6 +463,11 @@ void gfc::CloseCurrentForm()
 {
     gfc::ScopedLock _(GetLock());
 
+    if (s_stackTop == 0) {
+        // Nothing to close; guard against s_stack[-1] underflow
+        return;
+    }
+
     TGWVoidProc closeFn = nullptr;
     TGWVoidProc showFn  = nullptr;
 
@@ -411,15 +476,20 @@ void gfc::CloseCurrentForm()
         closeFn = s_pCurrent->callbacks->pClose;
     }
 
+    // Notify the outgoing form it is being deactivated
+    NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
+
     s_stack[s_stackTop - 1] = kFormIdInvalid;
     --s_stackTop;
 
     // Restore previous
+    const gfc::FormRecord* lowerRec = nullptr;
     if (s_stackTop > 0) {
         int prevIdx = FindRegIdx(s_stack[s_stackTop - 1]);
         if (prevIdx >= 0) {
             s_pCurrent  = &s_registry[prevIdx].record;
             s_currentId = s_stack[s_stackTop - 1];
+            lowerRec    = s_pCurrent;
             if (s_pCurrent->callbacks != nullptr) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
@@ -431,6 +501,9 @@ void gfc::CloseCurrentForm()
 
     if (closeFn != nullptr) closeFn(nullptr);
     if (showFn  != nullptr) showFn(nullptr);
+
+    // Notify the restored lower form it has been activated
+    NotifyForm(lowerRec, GM_FORM_ACTIVATED);
 }
 
 gfc::FormId gfc::GetCurrentFormId()
@@ -552,6 +625,12 @@ void gfc::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
             s_registry[idx].record.callbacks->pMsg(&msg);
         }
     }
+}
+
+bool gfc::QueryIdleExpire()
+{
+    gfc::ScopedLock _(GetLock());
+    return QueryForm(s_pCurrent, GM_IDLE_EXPIRE);
 }
 
 void gfc::KeyEvent(uint32_t key, uint32_t pressedCnt)

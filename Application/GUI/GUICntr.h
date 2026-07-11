@@ -114,7 +114,6 @@ void GUIKeyEnevt(uint32_t uKey, uint32_t uPressedCnt);
 #define  WID_MessageForm     (WID_FORMBEGIN + 7)
 #define  WID_ConfigForm      (WID_FORMBEGIN + 8)
 #define  WID_GuageForm       (WID_FORMBEGIN + 9)
-#define  WID_FatalForm       (WID_FORMBEGIN + 10)
 #define  WID_LoginDialog     (WID_FORMBEGIN + 11)
 #define  WID_TimeDialog      (WID_FORMBEGIN + 12)
 #define  WID_WLGListForm     (WID_FORMBEGIN + 13)
@@ -124,6 +123,7 @@ void GUIKeyEnevt(uint32_t uKey, uint32_t uPressedCnt);
 #define  WID_DeviceTestForm (WID_FORMBEGIN + 17)
 #define  WID_EthernetConfigForm (WID_FORMBEGIN + 18)
 #define  WID_AboutForm      (WID_FORMBEGIN + 19)
+#define  WID_LogListForm    (WID_FORMBEGIN + 20)
 //-----------------------------------------------------------------------------
 // �������ڷ���Ϣ
 void GUISendMessage( uint32_t uMsgIdent, uint32_t uParam, uint32_t uData );

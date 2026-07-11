@@ -1094,17 +1094,17 @@ uint32_t FIX_ReadEvtLogCount( TEventLogType type )
   uint32_t uRes;
   switch( type )
     {
-    case mltEvent:
+    case mltDeviceLog:
       {
       uRes = LogIndexer.EventLogs.Count;
       break;
       }
-    case mltAlarm:
+    case mltDevStatus:
       {
       uRes = LogIndexer.AlarmLogs.Count;
       break;
       }
-    case mltFault:
+    case mltAutoCtrl:
       {
       uRes = LogIndexer.FaultLogs.Count;
       break;
@@ -1141,7 +1141,7 @@ uint32_t FIX_ReadEvtLogItem ( TEventLogType  type,
   // 根据记录类型取地址和索引
   switch( type )
     {
-    case mltEvent:
+    case mltDeviceLog:
       {
       pIndexer = &LogIndexer.EventLogs;
       uAddr    = ADDR_EVENTLOG;
@@ -1154,7 +1154,7 @@ uint32_t FIX_ReadEvtLogItem ( TEventLogType  type,
 
       break;
       }
-    case mltAlarm:
+    case mltDevStatus:
       {
       pIndexer = &LogIndexer.AlarmLogs;
       uAddr    = ADDR_ALARMLOG;
@@ -1167,7 +1167,7 @@ uint32_t FIX_ReadEvtLogItem ( TEventLogType  type,
 
       break;
       }
-    case mltFault:
+    case mltAutoCtrl:
       {
       pIndexer = &LogIndexer.FaultLogs;
       uAddr    = ADDR_FAULTLOG;
@@ -1253,7 +1253,7 @@ uint32_t FIX_SaveEvtLogItem ( TEventLogType type, const void* pvBuf )
   // 根据记录类型取地址和索引
   switch( type )
     {
-    case mltEvent:
+    case mltDeviceLog:
       {
       pIndexer = &LogIndexer.EventLogs;
       uAddr    = ADDR_EVENTLOG;
@@ -1266,7 +1266,7 @@ uint32_t FIX_SaveEvtLogItem ( TEventLogType type, const void* pvBuf )
 
       break;
       }
-    case mltAlarm:
+    case mltDevStatus:
       {
       pIndexer = &LogIndexer.AlarmLogs;
       uAddr    = ADDR_ALARMLOG;
@@ -1279,7 +1279,7 @@ uint32_t FIX_SaveEvtLogItem ( TEventLogType type, const void* pvBuf )
 
       break;
       }
-    case mltFault:
+    case mltAutoCtrl:
       {
       pIndexer = &LogIndexer.FaultLogs;
       uAddr    = ADDR_FAULTLOG;
@@ -1348,7 +1348,7 @@ uint32_t FIX_ClearEventLog( uint32_t uToken, TEventLogType elType )
   TRingStore *pIndexer;
   switch( elType )
     {
-    case mltEvent:
+    case mltDeviceLog:
       {
       pIndexer = &LogIndexer.EventLogs;
       if( pIndexer->ItemLen != LEN_EVENT_LOG )
@@ -1358,7 +1358,7 @@ uint32_t FIX_ClearEventLog( uint32_t uToken, TEventLogType elType )
         }
       break;
       }
-    case mltAlarm:
+    case mltDevStatus:
       {
       pIndexer = &LogIndexer.AlarmLogs;
       if( pIndexer->ItemLen != LEN_ALARM_LOG )
@@ -1368,7 +1368,7 @@ uint32_t FIX_ClearEventLog( uint32_t uToken, TEventLogType elType )
         }
       break;
       }
-    case mltFault:
+    case mltAutoCtrl:
       {
       pIndexer = &LogIndexer.FaultLogs;
       if( pIndexer->ItemLen != LEN_FAULT_LOG )
