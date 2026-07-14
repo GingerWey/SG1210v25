@@ -21,7 +21,7 @@
               2026.06.24 (v2.0  — adapter for gform)
               2023.12.05 (v1.10 — original implementation)
 */
-//-----------------------------------------------------------------------------//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 #include "GUICntr.h"
 
 //  New GForm system 
@@ -43,6 +43,7 @@
 #include "GUI.h"
 #include "GWinTypes.h"
 #include "GUIMessage.h"
+#include "DevTypes.h"  // NUM_Elements macro
 
 //  Form headers (for GFormsList registration)
 #include "GSplashForm.h"
@@ -56,14 +57,6 @@
 // MCU-only forms (require FreeRTOS / STM32 HAL / rtc.h)
 #ifndef __vmSIMULATOR__
 #include "GDevInfoForm.h"
-#include "GMessageForm.h"
-#include "GUICtrlConfigDialog.h"
-#include "GUIUARTConfigDialog.h"
-#include "GGuageForm.h"
-#include "GLoginDialog.h"
-#include "GTimeDialog.h"
-//#include "GWLGListForm.h"
-//#include "GWLGViewForm.h"
 #include "GUIMisc.h"
 #endif
 
@@ -105,41 +98,27 @@ struct FormEntry {
 // s_formTable is kept as a fallback for forms that don't use FormRegistrar
 // (e.g., forms not yet migrated, or forms that need late registration).
 static constexpr FormEntry s_formTableSim[] = {
-    { WID_SplashForm,       &FSplashForm,         "Splash"         },
-    { WID_MenuForm,         &FMainMenuForm,       "Menu"           },
-    { WID_MainForm,         &FMainForm,           "Main"           },
-    { WID_DataListForm,     &FDataListForm,       "DataList"       },
-    { WID_LogListForm,      &FLogListForm,        "LogList"        },
-    { WID_ConfigForm,       &FConfigForm,         "Config"         },
+    { WID_SplashForm,       &FSplashForm,         "Splash"    },
+    { WID_MenuForm,         &FMainMenuForm,       "Menu"      },
+    { WID_MainForm,         &FMainForm,           "Main"      },
+    { WID_DataListForm,     &FDataListForm,       "DataList"  },
+    { WID_LogListForm,      &FLogListForm,        "LogList"   },
+    { WID_ConfigForm,       &FConfigForm,         "Config"    },
+#ifndef __vmSIMULATOR__
+    { WID_DevInfoForm,      &FDevInfoForm,        "DevInfo"   },
+#endif
+//    { WID_WLGListForm,      &FWavelogListForm,    "WLGList"   },
+//    { WID_WLGViewForm,      &FWavelogViewForm,    "WLGView"   },
 };
 
-#ifndef __vmSIMULATOR__
-static constexpr FormEntry s_formTableMcu[] = {
-    { WID_CTRLConfigForm,   &FCTRLConfigForm,     "CTRLConfig"     },
-    { WID_UARTConfigForm,   &FUARTConfigForm,     "UARTConfig"     },
-    { WID_DevInfoForm,      &FDevInfoForm,        "DevInfo"        },
-    { WID_MessageForm,      &FMessageForm,        "Message"        },
-    { WID_GuageForm,        &FGuageForm,          "Guage"          },
-    { WID_LoginDialog,      &FLoginDialog,        "Login"          },
-    { WID_TimeDialog,       &FTimeDialog,         "Time"           },
-    { WID_LogListForm,      &FLogListForm,        "LogList"        },
-//    { WID_WLGListForm,      &FWavelogListForm,    "WLGList"        },
-//    { WID_WLGViewForm,      &FWavelogViewForm,    "WLGView"        },
-};
-#endif
-
-static constexpr size_t kNumSimForms = sizeof(s_formTableSim) / sizeof(s_formTableSim[0]);
-#ifndef __vmSIMULATOR__
-static constexpr size_t kNumMcuForms = sizeof(s_formTableMcu) / sizeof(s_formTableMcu[0]);
-#endif
-
+static constexpr size_t kNumForms = NUM_Elements(s_formTableSim);
 //=============================================================================
 // Adapter: register all known forms into GForm system
 //=============================================================================
 static void RegisterAllForms()
 {
-    // Sim-compatible forms (always available)
-    for (size_t i = 0; i < kNumSimForms; ++i) {
+    // forms (always available)
+    for (size_t i = 0; i < kNumForms; ++i) {
         if (s_formTableSim[i].form != nullptr) {
             gfc::RegisterForm(
                 static_cast<gfc::FormId>(s_formTableSim[i].id),
@@ -148,18 +127,6 @@ static void RegisterAllForms()
             );
         }
     }
-#ifndef __vmSIMULATOR__
-    // MCU-only forms (require FreeRTOS / STM32 HAL)
-    for (size_t i = 0; i < kNumMcuForms; ++i) {
-        if (s_formTableMcu[i].form != nullptr) {
-            gfc::RegisterForm(
-                static_cast<gfc::FormId>(s_formTableMcu[i].id),
-                s_formTableMcu[i].form,
-                s_formTableMcu[i].name
-            );
-        }
-    }
-#endif
 }
 
 //=============================================================================

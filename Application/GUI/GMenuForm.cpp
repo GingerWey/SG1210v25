@@ -146,7 +146,7 @@ static const TMenuItem kMenuItems[] =
   // Row 1
   {  24, 72,  picIdxMU_Item32x32_01,  24, 107, 33, 17, idMenuName1,  idMenuDesp1,  WID_DataListForm,    nullptr },
   {  86, 72,  picIdxMU_Item32x32_02,  86, 107, 32, 17, idMenuName2,  idMenuDesp2,  WID_LogListForm,     (const void*)mltAutoCtrl },
-  { 148, 72,  picIdxMU_Item32x32_03, 148, 107, 33, 17, idMenuName3,  idMenuDesp3,  WID_SystemLogForm,   nullptr },
+  { 148, 72,  picIdxMU_Item32x32_03, 148, 107, 33, 17, idMenuName3,  idMenuDesp3,  WID_LogListForm,     (const void*)mltDeviceLog },
   { 210, 72,  picIdxMU_Item32x32_04, 210, 107, 33, 17, idMenuName4,  idMenuDesp4,  WID_WLGListForm,     nullptr },
   { 272, 72,  picIdxMU_Item32x32_05, 272, 107, 33, 17, idMenuName5,  idMenuDesp5,  WID_DeviceTestForm,  nullptr },
   // Row 2
