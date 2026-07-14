@@ -1,11 +1,13 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GMenuForm.h
- Version     : V1.10
- By          : Silver Grid Technology
- Description :Main menu form
-        
- Date       : 2023.12.05
+ Version     : V2.04
+ By          : Wey. Silver Grid Technology
+ Description : Main menu form
+
+ Date        : 2026.07.14 (V2.04 -- 使用 NUM_Elements 宏自动计算菜单项数量)
+               2026.07.14 (V2.03 -- 从子窗口返回时保持选中项索引)
+               2023.12.05 (V1.10 -- original implementation)
 */
 //-----------------------------------------------------------------------------
 #ifndef GUI_MENUFORM_H

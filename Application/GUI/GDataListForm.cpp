@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GPDataListForm.cpp
- Version     : V1.08
+ Version     : V1.09
  By          : Wey. Silver Grid
 
  Description : DataList form implementation.
@@ -28,7 +28,8 @@
                  - UP/DOWN move cursor (skips group headers); list scrolls
                  - Values refresh every 1s (GM_TIMER_TICK)
 
- Date        : 2026.07.10 (V1.08 — add inner/outer frames: bright outer frame
+ Date        : 2026.07.14 (V1.09 — 使用 NUM_Elements 宏计算数组元素个数)
+              2026.07.10 (V1.08 — add inner/outer frames: bright outer frame
                           (dimmer than selection) encloses panel+scrollbar; dark
                           inner frame encloses the row table only; row table
                           inset from panel (T/B/L gap) and content inset from
@@ -199,7 +200,7 @@ static const Row s_rows[] = {
   { kReg,   0, REG_RELAY2 },
   { kReg,   0, REG_RELAY3 },
 };
-static const uint16_t s_rowCount = sizeof(s_rows) / sizeof(s_rows[0]);
+static const uint16_t s_rowCount = NUM_Elements(s_rows);
 
 //=============================================================================
 // Form state

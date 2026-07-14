@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPMenuForm.cpp
- Version     : V2.01
+ Version     : V2.04
  By          : Wey. Silver Grid
 
  Description : 主菜单表单 -- 2×5 图标网格，键盘/触屏导航。
@@ -26,7 +26,9 @@
      - 选取框填充使用 GUI_AA_FillRoundedRect + GUI_SetAlpha 半透明
      - 需 GUI_AA_EnableHiRes() 全局启用（GUICntr.cpp GUIStart）
 
- Date        : 2026.06.29 (V2.02 -- clip-redraw 替代 MemDev；AA 半透明选取框)
+ Date        : 2026.07.14 (V2.04 -- 使用 NUM_Elements 宏自动计算菜单项数量)
+              2026.07.14 (V2.03 -- 从子窗口返回时保持选中项索引，不重置为0)
+              2026.06.29 (V2.02 -- clip-redraw 替代 MemDev；AA 半透明选取框)
               2026.06.29 (V2.01 -- MemDev 快照还原替代黑色填充，修复透明图标背景)
               2026.06.29 (V2.00 -- 按表单设计文档重写，2×5 网格替代旧列表)
               2026.06.25 (V1.11 -- added GM_TOUCH)
@@ -123,7 +125,7 @@
 // --- 网格布局 ---
 #define MU_GRID_COLS      5
 #define MU_GRID_ROWS      2
-#define MU_ITEM_COUNT     10
+// MU_ITEM_COUNT 在 kMenuItems 数组定义后自动计算
 
 //=============================================================================
 // 菜单项描述表 -- 图标坐标、子图索引、标签区域、目标 Form、说明文字
@@ -138,7 +140,7 @@ typedef struct tagMenuItem {
   const void* pArgument;          // 传递给目标Form的参数
 } TMenuItem;
 
-static const TMenuItem kMenuItems[MU_ITEM_COUNT] =
+static const TMenuItem kMenuItems[] =
 {
   // Row 1
   {  24, 72,  picIdxMU_Item32x32_01,  24, 107, 33, 17, idMenuName1,  idMenuDesp1,  WID_DataListForm,    nullptr },
@@ -154,12 +156,16 @@ static const TMenuItem kMenuItems[MU_ITEM_COUNT] =
   { 272, 145, picIdxMU_Item32x32_10, 272, 180, 33, 17, idMenuName10, idMenuDesp10, WID_AboutForm,       nullptr },
 };
 
+// 自动计算菜单项数量
+#define MU_ITEM_COUNT     NUM_Elements(kMenuItems)
+
 //=============================================================================
 // Form 状态
 //=============================================================================
 typedef struct tagMenuState {
   int  iCurItem;       // 当前选中项索引 (0..9)
   bool bEnterDown;     // Enter 按下状态（控制移位绘制）
+  bool bInitialized;   // 是否已初始化（区分首次显示和返回恢复）
 } TMenuState;
 
 static TMenuState m_State;
@@ -447,8 +453,13 @@ static void _Init(const void* argument)
 static void _Show(const void* argument)
 {
   (void)argument;
-  m_State.iCurItem   = 0;
-  m_State.bEnterDown  = false;
+  // 首次显示时初始化为第0项，从子窗口返回时保持原选中项
+  if (!m_State.bInitialized)
+  {
+    m_State.iCurItem = 0;
+    m_State.bInitialized = true;
+  }
+  m_State.bEnterDown = false;
   _Redraw();
 }
 

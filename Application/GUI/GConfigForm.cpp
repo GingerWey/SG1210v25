@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GConfigForm.cpp
- Version     : V1.06
+ Version     : V1.07
  By          : Wey. Silver Grid
 
  Description : Config form - parameter configuration form.
@@ -26,7 +26,8 @@
                  - Edit button drawn but inert (editor dialogs not yet
                    designed - spec 6.7).
 
- Date        : 2026.07.13 (V1.06 - Caption left edge: add 4px gap from frame
+ Date        : 2026.07.14 (V1.07 - 使用 NUM_Elements 宏计算数组元素个数)
+              2026.07.13 (V1.06 - Caption left edge: add 4px gap from frame
               border (CF_CAT_ICON_LEFT_GAP), aligned with GLogListForm)
               2026.07.13 (V1.05 - increase visible rows to 8 (row height
               23px); ENUM types also append dimension unit)
@@ -184,7 +185,7 @@ struct CfgRow {
 };
 
 #define ENUM_ROW(reg, list)  \
-  { (reg), (list), (uint8_t)(sizeof(list) / sizeof((list)[0])) }
+  { (reg), (list), (uint8_t)NUM_Elements(list) }
 #define NUM_ROW(reg)  \
   { (reg), nullptr, 0 }
 
@@ -230,16 +231,16 @@ struct CfgTypeDesc {
 };
 
 static const CfgTypeDesc kCfgTypes[] = {
-  { s_rowsLogic,    (uint16_t)(sizeof(s_rowsLogic)  / sizeof(s_rowsLogic[0])),
+  { s_rowsLogic,    NUM_Elements(s_rowsLogic),
                     idCfgGroup01, picIdxCF_Logic16x16Cyan },
-  { s_rowsDevice,   (uint16_t)(sizeof(s_rowsDevice) / sizeof(s_rowsDevice[0])),
+  { s_rowsDevice,   NUM_Elements(s_rowsDevice),
                     idCfgGroup02, picIdxCF_Device16x16Cyan },
-  { s_rowsSerial,   (uint16_t)(sizeof(s_rowsSerial) / sizeof(s_rowsSerial[0])),
+  { s_rowsSerial,   NUM_Elements(s_rowsSerial),
                     idCfgGroup03, picIdxCF_Serial16x16Cyan },
   { s_rowsEthernet, 0,
                     idCfgGroup04, picIdxCF_Ethernet16x16Cyan },
 };
-#define CF_TYPE_COUNT  (sizeof(kCfgTypes) / sizeof(kCfgTypes[0]))
+#define CF_TYPE_COUNT  NUM_Elements(kCfgTypes)
 
 //=============================================================================
 // Form state (heap-allocated in _Init, freed in _Close)
