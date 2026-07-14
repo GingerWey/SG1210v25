@@ -1,13 +1,15 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.cpp
- Version     : V1.02
+ Version     : V1.03
  By          : Wey. Silver Grid
 
  Description : GFormCentra system implementation.
                Registry, navigation stack, message dispatch, Tick loop.
 
- Date        : 2026.06.24 (V1.00 — initial implementation)
+ Date        : 2026.07.14 (V1.03 — 内存分配从 new 移植到 RAMHeap（MCU），
+                          Simulator 保持使用 new)
+              2026.06.24 (V1.00 — initial implementation)
               2026.06.25 (V1.01 — added TouchEvent for touch screen support)
               2026.07.08 (V1.02 — navigation lifecycle messages GM_FORM_ACTIVATED/
                           DEACTIVATED, GM_CLOSE_QUERY veto on PopForm,
@@ -19,6 +21,7 @@
 #include "GWinTypes.h"
 #include "GUIMessage.h"
 #include "GUI.h"
+#include "RamHeap.h"
 
 #include <cstring>
 
@@ -61,7 +64,16 @@ size_t     s_msgTail = 0;
 // ── Platform mutex (lazy init — avoids static init order crash) ──────
 static gfc::platform::Lock* s_plock = nullptr;
 static gfc::platform::Lock& GetLock() {
-    if (!s_plock) s_plock = new gfc::platform::Lock();
+    if (!s_plock) {
+#ifdef __vmSIMULATOR__
+        s_plock = new gfc::platform::Lock();
+#else
+        s_plock = static_cast<gfc::platform::Lock*>(RAM_Malloc(sizeof(gfc::platform::Lock)));
+        if (s_plock) {
+            new (s_plock) gfc::platform::Lock();  // placement new
+        }
+#endif
+    }
     return *s_plock;
 }
 
