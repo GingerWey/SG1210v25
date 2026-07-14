@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.cpp
- Version     : V1.03
+ Version     : V1.04
  By          : Wey. Silver Grid
 
  Description : GFormCentra system implementation.
                Registry, navigation stack, message dispatch, Tick loop.
 
- Date        : 2026.07.14 (V1.03 — 内存分配从 new 移植到 RAMHeap（MCU），
-                          Simulator 保持使用 new)
+ Date        : 2026.07.14 (V1.04 — 修正所有违反 Yoda-style 编码规范的比较语句)
+              2026.07.14 (V1.03 — 内存分配从 new 移植到 RAMHeap)
               2026.06.24 (V1.00 — initial implementation)
               2026.06.25 (V1.01 — added TouchEvent for touch screen support)
               2026.07.08 (V1.02 — navigation lifecycle messages GM_FORM_ACTIVATED/
@@ -24,6 +24,7 @@
 #include "RamHeap.h"
 
 #include <cstring>
+#include <new>
 
 //=============================================================================
 // Internal state (anonymous namespace)
@@ -65,14 +66,10 @@ size_t     s_msgTail = 0;
 static gfc::platform::Lock* s_plock = nullptr;
 static gfc::platform::Lock& GetLock() {
     if (!s_plock) {
-#ifdef __vmSIMULATOR__
-        s_plock = new gfc::platform::Lock();
-#else
         s_plock = static_cast<gfc::platform::Lock*>(RAM_Malloc(sizeof(gfc::platform::Lock)));
         if (s_plock) {
             new (s_plock) gfc::platform::Lock();  // placement new
         }
-#endif
     }
     return *s_plock;
 }
@@ -134,7 +131,7 @@ bool QueryForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
     msg.MsgId = msgId;
     msg.Param = param;
     rec->callbacks->pMsg(&msg);
-    return (msg.Data.v > 0);
+    return (0 < msg.Data.v);
 }
 
 /// Activate a form: push onto stack, call pInit+pShow, update state.
@@ -142,7 +139,7 @@ bool QueryForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
 bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
                   const void* para)
 {
-    if (id == kFormIdInvalid || rec == nullptr || rec->callbacks == nullptr)
+    if (kFormIdInvalid == id || nullptr == rec || nullptr == rec->callbacks)
         return false;
     if (s_stackTop >= gfc::kMaxStack)
         return false;
@@ -155,10 +152,10 @@ bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
     s_currentId = id;
 
     // Call init then show
-    if (rec->callbacks->pInit != nullptr) {
+    if (nullptr != rec->callbacks->pInit) {
         rec->callbacks->pInit(para);
     }
-    if (rec->callbacks->pShow != nullptr) {
+    if (nullptr != rec->callbacks->pShow) {
         rec->callbacks->pShow(para);
     }
 
@@ -171,10 +168,12 @@ bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
 /// Called with lock held.
 void DeactivateCurrent(const void* para)
 {
-    if (s_stackTop == 0) return;
+    if (0 == s_stackTop) {
+        return;
+    }
 
-    if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
-        if (s_pCurrent->callbacks->pClose != nullptr) {
+    if (nullptr != s_pCurrent && nullptr != s_pCurrent->callbacks) {
+        if (nullptr != s_pCurrent->callbacks->pClose) {
             s_pCurrent->callbacks->pClose(para);
         }
     }
@@ -183,10 +182,10 @@ void DeactivateCurrent(const void* para)
     --s_stackTop;
 
     // Restore previous or clear
-    if (s_stackTop > 0) {
+    if (0 < s_stackTop) {
         gfc::FormId prevId = s_stack[s_stackTop - 1];
         int idx = FindRegIdx(prevId);
-        if (idx >= 0) {
+        if (0 <= idx) {
             s_pCurrent  = &s_registry[idx].record;
             s_currentId = prevId;
         } else {
@@ -203,13 +202,13 @@ void DeactivateCurrent(const void* para)
 /// Called with lock held.
 void ShowTop(const void* para)
 {
-    if (s_stackTop > 0) {
+    if (0 < s_stackTop) {
         gfc::FormId topId = s_stack[s_stackTop - 1];
         int idx = FindRegIdx(topId);
-        if (idx >= 0) {
+        if (0 <= idx) {
             s_pCurrent  = &s_registry[idx].record;
             s_currentId = topId;
-            if (s_pCurrent->callbacks->pShow != nullptr) {
+            if (nullptr != s_pCurrent->callbacks->pShow) {
                 s_pCurrent->callbacks->pShow(para);
             }
         }
@@ -261,7 +260,7 @@ void gfc::Tick()
     }
 
     while (hasPending) {
-        if (pending.data != nullptr) {
+        if (nullptr != pending.data) {
             SendMsgPtr(pending.msgId, pending.param, pending.data);
         } else {
             SendMsg(pending.msgId, pending.param, pending.value);
@@ -283,12 +282,12 @@ void gfc::Tick()
     const GWinForm* callbacks = nullptr;
     {
         gfc::ScopedLock _(GetLock());
-        if (s_pCurrent != nullptr) {
+        if (nullptr != s_pCurrent) {
             callbacks = s_pCurrent->callbacks;
         }
     }
 
-    if (callbacks != nullptr && callbacks->pMsg != nullptr) {
+    if (nullptr != callbacks && nullptr != callbacks->pMsg) {
         GM_MESSAGE tickMsg = {};
         tickMsg.MsgId  = GM_TIMER_TICK;
         tickMsg.Param  = 0;
@@ -308,13 +307,15 @@ size_t gfc::Run()
 
 void gfc::RegisterForm(FormId id, const GWinForm* form, const char* name)
 {
-    if (form == nullptr) return;
+    if (nullptr == form) {
+        return;
+    }
 
     gfc::ScopedLock _(GetLock());
 
     // Check for overwrite (same GWinForm pointer)
     int existIdx = FindRegIdxByForm(form);
-    if (existIdx >= 0) {
+    if (0 <= existIdx) {
         s_registry[existIdx].id            = id;
         s_registry[existIdx].record.name   = name;
         s_registry[existIdx].record.flags  = 0;
@@ -323,7 +324,7 @@ void gfc::RegisterForm(FormId id, const GWinForm* form, const char* name)
 
     // Also check for overwrite by id
     existIdx = FindRegIdx(id);
-    if (existIdx >= 0) {
+    if (0 <= existIdx) {
         s_registry[existIdx].record.callbacks = form;
         s_registry[existIdx].record.name      = name;
         s_registry[existIdx].record.flags     = 0;
@@ -354,7 +355,9 @@ void gfc::UnregisterForm(FormId id)
     gfc::ScopedLock _(GetLock());
 
     int idx = FindRegIdx(id);
-    if (idx < 0) return;
+    if (0 > idx) {
+        return;
+    }
 
     // Compact the array by shifting entries down
     for (size_t i = static_cast<size_t>(idx); i < s_registryCount - 1; ++i) {
@@ -391,7 +394,7 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
 
         // Snapshot close callback
         TGWVoidProc closeFn = nullptr;
-        if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
+        if (nullptr != s_pCurrent && nullptr != s_pCurrent->callbacks) {
             closeFn = s_pCurrent->callbacks->pClose;
         }
 
@@ -403,18 +406,22 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
         TGWVoidProc showFn = nullptr;
         const gfc::FormRecord* lowerRec = nullptr;
         int prevIdx = FindRegIdx(s_stack[s_stackTop - 1]);
-        if (prevIdx >= 0) {
+        if (0 <= prevIdx) {
             s_pCurrent  = &s_registry[prevIdx].record;
             s_currentId = s_stack[s_stackTop - 1];
             lowerRec    = s_pCurrent;
-            if (s_pCurrent->callbacks != nullptr) {
+            if (nullptr != s_pCurrent->callbacks) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
         }
 
         // Execute callbacks outside of critical section concerns
-        if (closeFn != nullptr) closeFn(para);
-        if (showFn  != nullptr) showFn(para);
+        if (nullptr != closeFn) {
+            closeFn(para);
+        }
+        if (nullptr != showFn) {
+            showFn(para);
+        }
 
         // Notify the restored lower form it has been activated
         NotifyForm(lowerRec, GM_FORM_ACTIVATED);
@@ -424,30 +431,32 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
     case FormTransition::kReplace: {
         // Snapshot close
         TGWVoidProc closeFn = nullptr;
-        if (s_stackTop > 0 && s_pCurrent != nullptr &&
-            s_pCurrent->callbacks != nullptr) {
+        if (0 < s_stackTop && nullptr != s_pCurrent &&
+            nullptr != s_pCurrent->callbacks) {
             closeFn = s_pCurrent->callbacks->pClose;
         }
 
         // Notify the outgoing form it is being deactivated
-        if (s_stackTop > 0) {
+        if (0 < s_stackTop) {
             NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
         }
 
         // Pop current from stack
-        if (s_stackTop > 0) {
+        if (0 < s_stackTop) {
             s_stack[s_stackTop - 1] = kFormIdInvalid;
             --s_stackTop;
         }
         s_pCurrent  = nullptr;
         s_currentId = kFormIdInvalid;
 
-        if (closeFn != nullptr) closeFn(para);
+        if (nullptr != closeFn) {
+            closeFn(para);
+        }
 
         // Find and activate new form (ActivateForm sends GM_FORM_ACTIVATED)
-        if (id != kFormIdInvalid) {
+        if (kFormIdInvalid != id) {
             int idx = FindRegIdx(id);
-            if (idx >= 0) {
+            if (0 <= idx) {
                 ActivateForm(id, &s_registry[idx].record, para);
             }
         }
@@ -455,13 +464,17 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
     }
 
     case FormTransition::kPush: {
-        if (id == kFormIdInvalid) return;
+        if (kFormIdInvalid == id) {
+            return;
+        }
 
         int idx = FindRegIdx(id);
-        if (idx < 0) return;
+        if (0 > idx) {
+            return;
+        }
 
         // Notify the current top form it is being pushed down
-        if (s_stackTop > 0) {
+        if (0 < s_stackTop) {
             NotifyForm(s_pCurrent, GM_FORM_DEACTIVATED);
         }
 
@@ -475,7 +488,7 @@ void gfc::CloseCurrentForm()
 {
     gfc::ScopedLock _(GetLock());
 
-    if (s_stackTop == 0) {
+    if (0 == s_stackTop) {
         // Nothing to close; guard against s_stack[-1] underflow
         return;
     }
@@ -483,8 +496,8 @@ void gfc::CloseCurrentForm()
     TGWVoidProc closeFn = nullptr;
     TGWVoidProc showFn  = nullptr;
 
-    if (s_stackTop > 0 && s_pCurrent != nullptr &&
-        s_pCurrent->callbacks != nullptr) {
+    if (0 < s_stackTop && nullptr != s_pCurrent &&
+        nullptr != s_pCurrent->callbacks) {
         closeFn = s_pCurrent->callbacks->pClose;
     }
 
@@ -496,13 +509,13 @@ void gfc::CloseCurrentForm()
 
     // Restore previous
     const gfc::FormRecord* lowerRec = nullptr;
-    if (s_stackTop > 0) {
+    if (0 < s_stackTop) {
         int prevIdx = FindRegIdx(s_stack[s_stackTop - 1]);
-        if (prevIdx >= 0) {
+        if (0 <= prevIdx) {
             s_pCurrent  = &s_registry[prevIdx].record;
             s_currentId = s_stack[s_stackTop - 1];
             lowerRec    = s_pCurrent;
-            if (s_pCurrent->callbacks != nullptr) {
+            if (nullptr != s_pCurrent->callbacks) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
         }
@@ -511,8 +524,12 @@ void gfc::CloseCurrentForm()
         s_currentId = kFormIdInvalid;
     }
 
-    if (closeFn != nullptr) closeFn(nullptr);
-    if (showFn  != nullptr) showFn(nullptr);
+    if (nullptr != closeFn) {
+        closeFn(nullptr);
+    }
+    if (nullptr != showFn) {
+        showFn(nullptr);
+    }
 
     // Notify the restored lower form it has been activated
     NotifyForm(lowerRec, GM_FORM_ACTIVATED);
@@ -534,7 +551,7 @@ size_t gfc::StackDepth()
 
 bool gfc::IsStackEmpty()
 {
-    return (s_stackTop == 0);
+    return (0 == s_stackTop);
 }
 
 gfc::FormId gfc::GetStackForm(size_t depth)
@@ -563,12 +580,12 @@ void gfc::SendMsg(uint16_t msgId, uint16_t param, int32_t value)
 
     {
         gfc::ScopedLock _(GetLock());
-        if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
+        if (nullptr != s_pCurrent && nullptr != s_pCurrent->callbacks) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
     }
 
-    if (msgFn != nullptr) {
+    if (nullptr != msgFn) {
         msg.MsgId    = msgId;
         msg.Param    = param;
         msg.Data.v   = value;
@@ -583,12 +600,12 @@ void gfc::SendMsgPtr(uint16_t msgId, uint16_t param, const void* data)
 
     {
         gfc::ScopedLock _(GetLock());
-        if (s_pCurrent != nullptr && s_pCurrent->callbacks != nullptr) {
+        if (nullptr != s_pCurrent && nullptr != s_pCurrent->callbacks) {
             msgFn = s_pCurrent->callbacks->pMsg;
         }
     }
 
-    if (msgFn != nullptr) {
+    if (nullptr != msgFn) {
         msg.MsgId    = msgId;
         msg.Param    = param;
         msg.Data.p   = const_cast<void*>(data);
@@ -631,9 +648,9 @@ void gfc::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
 
     for (size_t i = 0; i < stackLen; ++i) {
         int idx = FindRegIdx(stackCopy[i]);
-        if (idx >= 0 &&
-            s_registry[idx].record.callbacks != nullptr &&
-            s_registry[idx].record.callbacks->pMsg != nullptr) {
+        if (0 <= idx &&
+            nullptr != s_registry[idx].record.callbacks &&
+            nullptr != s_registry[idx].record.callbacks->pMsg) {
             s_registry[idx].record.callbacks->pMsg(&msg);
         }
     }
@@ -647,12 +664,14 @@ bool gfc::QueryIdleExpire()
 
 void gfc::KeyEvent(uint32_t key, uint32_t pressedCnt)
 {
-    if (key == 0) return;
+    if (0 == key) {
+        return;
+    }
 
     uint16_t msgId;
-    if (pressedCnt == 0) {
+    if (0 == pressedCnt) {
         msgId = GM_KEYUP;
-    } else if (pressedCnt == 1) {
+    } else if (1 == pressedCnt) {
         msgId = GM_KEYDOWN;
     } else {
         msgId = GM_KEYPRESS;
