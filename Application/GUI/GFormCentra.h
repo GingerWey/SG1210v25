@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.h
  Version     : V1.02
@@ -52,23 +52,18 @@ constexpr uint16_t kFormIdInvalid = 0xFFFF;
   constexpr uint16_t WID_SplashForm     = 100;
   constexpr uint16_t WID_MenuForm       = 101;
   constexpr uint16_t WID_MainForm       = 102;
-  constexpr uint16_t WID_EventListForm  = 103;
-  constexpr uint16_t WID_CTRLConfigForm = 104;
-  constexpr uint16_t WID_UARTConfigForm = 105;
+  constexpr uint16_t WID_DataListForm   = 103;
+  constexpr uint16_t WID_LogListForm    = 104;
+  constexpr uint16_t WID_DeviceTestForm = 105;
   constexpr uint16_t WID_DevInfoForm    = 106;
-  constexpr uint16_t WID_MessageForm    = 107;
-  constexpr uint16_t WID_ConfigForm     = 108;
-  constexpr uint16_t WID_GuageForm      = 109;
-  constexpr uint16_t WID_LoginDialog    = 111;
-  constexpr uint16_t WID_TimeDialog     = 112;
-  constexpr uint16_t WID_WLGListForm    = 113;
-  constexpr uint16_t WID_WLGViewForm    = 114;
-  constexpr uint16_t WID_DataListForm   = 115;
-  constexpr uint16_t WID_SystemLogForm  = 116;
-  constexpr uint16_t WID_DeviceTestForm = 117;
-  constexpr uint16_t WID_EthernetConfigForm = 118;
-  constexpr uint16_t WID_AboutForm      = 119;
-  constexpr uint16_t WID_LogListForm    = 120;
+  constexpr uint16_t WID_WLGListForm    = 107;
+  constexpr uint16_t WID_WLGViewForm    = 108;
+  constexpr uint16_t WID_MessageForm    = 109;
+  constexpr uint16_t WID_ConfigForm     = 110;
+  constexpr uint16_t WID_GuageForm      = 111;
+  constexpr uint16_t WID_LoginDialog    = 112;
+  constexpr uint16_t WID_TimeDialog     = 113;
+  constexpr uint16_t WID_AboutForm      = 114;
 #endif
 
 //=============================================================================

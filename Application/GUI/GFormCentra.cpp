@@ -1,14 +1,19 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GFormCentra.cpp
- Version     : V1.04
+ Version     : V1.08
  By          : Wey. Silver Grid
 
  Description : GFormCentra system implementation.
                Registry, navigation stack, message dispatch, Tick loop.
 
- Date        : 2026.07.14 (V1.04 — 修正所有违反 Yoda-style 编码规范的比较语句)
-              2026.07.14 (V1.03 — 内存分配从 new 移植到 RAMHeap)
+ Date        : 2026.07.14 (V1.08 — removed memory leak detection test code)
+              2026.07.14 (V1.06 — KeyEvent/TouchEvent use PostMsg instead of SendMsg
+                          to avoid cross-thread race between Windows message thread
+                          and MainTask thread, fixing crashes during key/touch input)
+              2026.07.14 (V1.05 — fixed nullptr crash in PopForm)
+              2026.07.14 (V1.04 — corrected all Yoda-style violations)
+              2026.07.14 (V1.03 — migrated memory allocation from new to RAMHeap)
               2026.06.24 (V1.00 — initial implementation)
               2026.06.25 (V1.01 — added TouchEvent for touch screen support)
               2026.07.08 (V1.02 — navigation lifecycle messages GM_FORM_ACTIVATED/
@@ -52,6 +57,7 @@ gfc::FormId            s_currentId = kFormIdInvalid;
 
 // ── Pending message queue (PostMsg / deferred delivery) ──────────
 constexpr size_t kMsgQueueSize = 16;
+
 struct PendingMsg {
     uint16_t    msgId;
     uint16_t    param;
@@ -84,10 +90,10 @@ bool s_initialized = false;
 /// Find a registry entry by FormId. Returns index or -1.
 int FindRegIdx(gfc::FormId id)
 {
-    for (size_t i = 0; i < s_registryCount; ++i) {
-        if (s_registry[i].record.callbacks != nullptr &&
-            s_registry[i].id == id) {
-            return static_cast<int>(i);
+    for (size_t iIdx = 0; iIdx < s_registryCount; ++iIdx) {
+        if (s_registry[iIdx].record.callbacks != nullptr &&
+            s_registry[iIdx].id == id) {
+            return static_cast<int>(iIdx);
         }
     }
     return -1;
@@ -96,9 +102,9 @@ int FindRegIdx(gfc::FormId id)
 /// Find registry entry by GWinForm pointer (for overwrite detection).
 int FindRegIdxByForm(const GWinForm* form)
 {
-    for (size_t i = 0; i < s_registryCount; ++i) {
-        if (s_registry[i].record.callbacks == form) {
-            return static_cast<int>(i);
+    for (size_t iIdx = 0; iIdx < s_registryCount; ++iIdx) {
+        if (s_registry[iIdx].record.callbacks == form) {
+            return static_cast<int>(iIdx);
         }
     }
     return -1;
@@ -230,8 +236,8 @@ void gfc::Init()
     // so the registry is already populated by the time Init() is called.
     // Only reset the navigation stack and message queue.
 
-    for (size_t i = 0; i < kMaxStack; ++i) {
-        s_stack[i] = kFormIdInvalid;
+    for (size_t iIdx = 0; iIdx < kMaxStack; ++iIdx) {
+        s_stack[iIdx] = kFormIdInvalid;
     }
     s_stackTop = 0;
 
@@ -360,8 +366,8 @@ void gfc::UnregisterForm(FormId id)
     }
 
     // Compact the array by shifting entries down
-    for (size_t i = static_cast<size_t>(idx); i < s_registryCount - 1; ++i) {
-        s_registry[i] = s_registry[i + 1];
+    for (size_t iIdx = static_cast<size_t>(idx); iIdx < s_registryCount - 1; ++iIdx) {
+        s_registry[iIdx] = s_registry[iIdx + 1];
     }
     --s_registryCount;
     s_registry[s_registryCount] = {};
@@ -413,6 +419,9 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
             if (nullptr != s_pCurrent->callbacks) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
+        } else {
+            s_pCurrent  = nullptr;
+            s_currentId = kFormIdInvalid;
         }
 
         // Execute callbacks outside of critical section concerns
@@ -424,7 +433,9 @@ void gfc::OpenForm(FormId id, const void* para, FormTransition transition)
         }
 
         // Notify the restored lower form it has been activated
-        NotifyForm(lowerRec, GM_FORM_ACTIVATED);
+        if (nullptr != lowerRec) {
+            NotifyForm(lowerRec, GM_FORM_ACTIVATED);
+        }
         break;
     }
 
@@ -518,6 +529,9 @@ void gfc::CloseCurrentForm()
             if (nullptr != s_pCurrent->callbacks) {
                 showFn = s_pCurrent->callbacks->pShow;
             }
+        } else {
+            s_pCurrent  = nullptr;
+            s_currentId = kFormIdInvalid;
         }
     } else {
         s_pCurrent  = nullptr;
@@ -532,7 +546,9 @@ void gfc::CloseCurrentForm()
     }
 
     // Notify the restored lower form it has been activated
-    NotifyForm(lowerRec, GM_FORM_ACTIVATED);
+    if (nullptr != lowerRec) {
+        NotifyForm(lowerRec, GM_FORM_ACTIVATED);
+    }
 }
 
 gfc::FormId gfc::GetCurrentFormId()
@@ -563,8 +579,8 @@ gfc::FormId gfc::GetStackForm(size_t depth)
 
 bool gfc::IsFormOnStack(FormId id)
 {
-    for (size_t i = 0; i < s_stackTop; ++i) {
-        if (s_stack[i] == id) return true;
+    for (size_t iIdx = 0; iIdx < s_stackTop; ++iIdx) {
+        if (s_stack[iIdx] == id) return true;
     }
     return false;
 }
@@ -636,8 +652,8 @@ void gfc::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
     {
         gfc::ScopedLock _(GetLock());
         stackLen = s_stackTop;
-        for (size_t i = 0; i < s_stackTop; ++i) {
-            stackCopy[i] = s_stack[i];
+        for (size_t iIdx = 0; iIdx < s_stackTop; ++iIdx) {
+            stackCopy[iIdx] = s_stack[iIdx];
         }
     }
 
@@ -646,8 +662,8 @@ void gfc::BroadcastMsg(uint16_t msgId, uint16_t param, int32_t value)
     msg.Param  = param;
     msg.Data.v = value;
 
-    for (size_t i = 0; i < stackLen; ++i) {
-        int idx = FindRegIdx(stackCopy[i]);
+    for (size_t iIdx = 0; iIdx < stackLen; ++iIdx) {
+        int idx = FindRegIdx(stackCopy[iIdx]);
         if (0 <= idx &&
             nullptr != s_registry[idx].record.callbacks &&
             nullptr != s_registry[idx].record.callbacks->pMsg) {
@@ -677,8 +693,10 @@ void gfc::KeyEvent(uint32_t key, uint32_t pressedCnt)
         msgId = GM_KEYPRESS;
     }
 
-    SendMsg(msgId, static_cast<uint16_t>(key),
-                static_cast<int32_t>(pressedCnt));
+    // Post to queue instead of SendMsg to avoid cross-thread race
+    // Windows message thread → queue → MainTask thread drains in Tick()
+    PostMsg(msgId, static_cast<uint16_t>(key),
+            static_cast<int32_t>(pressedCnt));
 }
 
 //=============================================================================
@@ -689,6 +707,7 @@ void gfc::TouchEvent(uint16_t action, uint16_t x, uint16_t y)
 {
     // Pack coordinates: x in upper 16 bits, y in lower 16 bits
     int32_t packed = (static_cast<int32_t>(x) << 16) | static_cast<int32_t>(y);
-    SendMsg(GM_TOUCH, action, packed);
+    // Post to queue instead of SendMsg to avoid cross-thread race
+    PostMsg(GM_TOUCH, action, packed);
 }
 #endif

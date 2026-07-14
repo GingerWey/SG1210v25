@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : CSGDraw.cpp
- Version     : V1.10
+ Version     : V1.12
  By          : Wey. Silver Grid
 
  Description : CSG image drawing — unified Sim+MCU streaming path.
@@ -10,7 +10,11 @@
                pClipRect honored on BOTH Sim and MCU (nullptr=full screen, &rect=clipped).
                Does NOT depend on emWin GUI_SetClipRect/GUI_GetClipRect.
 
- Date        : 2026.07.09 (V1.10 — Sim path now honors pClipRect via emWin GUI_SetClipRect
+ Date        : 2026.07.14 (V1.12 — bmpBuf allocation moved to Sim-only block, eliminating
+                          unnecessary malloc/free overhead on MCU path)
+              2026.07.14 (V1.11 — memset static state to zero before reuse to clear stale
+                          deflateBufHandle from previous calls, fixing crash on re-entry)
+              2026.07.09 (V1.10 — Sim path now honors pClipRect via emWin GUI_SetClipRect
                           (set around the decode loop). Previously Sim ignored pClipRect,
                           so a clipped background redraw overwrote the whole screen,
                           erasing non-redrawn content. MCU path unchanged (manual clip).
@@ -310,42 +314,47 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
         transpRgb565 = CrmToRgb565(activePalette, colorMode);
     }
 
-    // 5. Allocate buffers: CRM output + bitmap (RGB565 for MCU, 32-bit for Sim)
+    // 5. Allocate buffers: CRM output (always) + bitmap (Sim only)
     int maxBatch = width;
     if (totalPixels < maxBatch) {
         maxBatch = totalPixels;
     }
     int crmBytes = maxBatch * bpc;
-#ifdef __vmSIMULATOR__
-    int bmpBytes = maxBatch * 4;  // 32-bit 0x00RRGGBB for GUICC_M8888I
-#else
-    int bmpBytes = maxBatch * 2;  // RGB565 for ST7789S
-#endif
     GUI_HMEM hOutBuf = GUI_ALLOC_AllocZero(crmBytes);
-    GUI_HMEM hBmpBuf = GUI_ALLOC_AllocZero(bmpBytes);
-    if (0 == hOutBuf || 0 == hBmpBuf) {
-        if (0 != hOutBuf) {
-            GUI_ALLOC_Free(hOutBuf);
-        }
-        if (0 != hBmpBuf) {
-            GUI_ALLOC_Free(hBmpBuf);
-        }
+    if (0 == hOutBuf) {
         if (0 != hPalBuf) {
             GUI_ALLOC_Free(hPalBuf);
         }
         return;
     }
     uint8_t* outBuf = static_cast<uint8_t*>(GUI_ALLOC_h2p(hOutBuf));
-    void*    bmpBuf = GUI_ALLOC_h2p(hBmpBuf);
+
+#ifdef __vmSIMULATOR__
+    // Sim: allocate 32-bit bitmap buffer for GUI_DrawBitmapExp (GUICC_M8888I)
+    int bmpBytes = maxBatch * 4;
+    GUI_HMEM hBmpBuf = GUI_ALLOC_AllocZero(bmpBytes);
+    if (0 == hBmpBuf) {
+        GUI_ALLOC_Free(hOutBuf);
+        if (0 != hPalBuf) {
+            GUI_ALLOC_Free(hPalBuf);
+        }
+        return;
+    }
+    void* bmpBuf = GUI_ALLOC_h2p(hBmpBuf);
+#endif
 
     // 6. Init streaming decoder
     //    Static allocation: CSGDecoderState contains an 8KB window[] → won't fit
     //    on any RTOS task stack (HMITask=8KB).  Placed in .bss to avoid overflow.
+    //    CRITICAL: memset to zero before reuse to clear stale handles from previous calls
     static CSGDecoderState state;
+    memset(&state, 0, sizeof(state));
     if (CsgDecodeInit(&state, &pic, outBuf, activePalette, outMode)
         != CSG_ErrCode::kOk) {
-        GUI_ALLOC_Free(hOutBuf); 
+        GUI_ALLOC_Free(hOutBuf);
+#ifdef __vmSIMULATOR__
         GUI_ALLOC_Free(hBmpBuf);
+#endif
         if (0 != hPalBuf) {
             GUI_ALLOC_Free(hPalBuf);
         }
@@ -558,8 +567,7 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
           }
 #endif
         ++row;
-          
-          
+
 #ifdef RRS_GUITASK
         SetRSTSrc(RRS_GUITASK);
 #endif
@@ -578,8 +586,10 @@ void CSG_DrawPicture(const TGUIPicture* pPic, int x0, int y0,
     }
 
     GUI_ALLOC_Free(hOutBuf);
+#ifdef __vmSIMULATOR__
     GUI_ALLOC_Free(hBmpBuf);
-    if (0 != hPalBuf) { 
-       GUI_ALLOC_Free(hPalBuf); 
+#endif
+    if (0 != hPalBuf) {
+       GUI_ALLOC_Free(hPalBuf);
     }
 }
