@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GConfigForm.cpp
- Version     : V1.07
+ Version     : V1.08
  By          : Wey. Silver Grid
 
  Description : Config form - parameter configuration form.
@@ -184,10 +184,8 @@ struct CfgRow {
   uint8_t         enumCount;  // option count in pEnum
 };
 
-#define ENUM_ROW(reg, list)  \
-  { (reg), (list), (uint8_t)NUM_Elements(list) }
-#define NUM_ROW(reg)  \
-  { (reg), nullptr, 0 }
+#define ENUM_ROW(reg, list)  { (reg), (list), (uint8_t)NUM_Elements(list) }
+#define NUM_ROW(reg)         { (reg), nullptr, 0 }
 
 //=============================================================================
 // Config register groups (spec 6.5). One static table per config type.
@@ -199,11 +197,11 @@ static const CfgRow s_rowsLogic[] = {
   ENUM_ROW(REG_FN_AUTO_TURNOFF,    cbxListBool),
   ENUM_ROW(REG_FN_AUTO_BREAKER_ON, cbxListBool),
   ENUM_ROW(REG_FN_PASSBY_EN,       cbxListBool),
-  NUM_ROW (REG_FN_ACTION_VOLTAGE),
-  NUM_ROW (REG_FN_COIL_VOLTAGE),
-  NUM_ROW (REG_FN_PWRON_TIME),
-  NUM_ROW (REG_FN_PWROFF_TIME),
-  NUM_ROW (REG_FN_SHUTDOWN_TIME),
+  NUM_ROW (REG_FN_ACTION_VOLTAGE ),
+  NUM_ROW (REG_FN_COIL_VOLTAGE   ),
+  NUM_ROW (REG_FN_PWRON_TIME     ),
+  NUM_ROW (REG_FN_PWROFF_TIME    ),
+  NUM_ROW (REG_FN_SHUTDOWN_TIME  ),
 };
 
 static const CfgRow s_rowsDevice[] = {
@@ -231,14 +229,10 @@ struct CfgTypeDesc {
 };
 
 static const CfgTypeDesc kCfgTypes[] = {
-  { s_rowsLogic,    NUM_Elements(s_rowsLogic),
-                    idCfgGroup01, picIdxCF_Logic16x16Cyan },
-  { s_rowsDevice,   NUM_Elements(s_rowsDevice),
-                    idCfgGroup02, picIdxCF_Device16x16Cyan },
-  { s_rowsSerial,   NUM_Elements(s_rowsSerial),
-                    idCfgGroup03, picIdxCF_Serial16x16Cyan },
-  { s_rowsEthernet, 0,
-                    idCfgGroup04, picIdxCF_Ethernet16x16Cyan },
+  { s_rowsLogic,    NUM_Elements(s_rowsLogic),  idCfgGroup01, picIdxCF_Logic16x16Cyan },
+  { s_rowsDevice,   NUM_Elements(s_rowsDevice), idCfgGroup02, picIdxCF_Device16x16Cyan },
+  { s_rowsSerial,   NUM_Elements(s_rowsSerial), idCfgGroup03, picIdxCF_Serial16x16Cyan },
+  { s_rowsEthernet, 0,                          idCfgGroup04, picIdxCF_Ethernet16x16Cyan },
 };
 #define CF_TYPE_COUNT  NUM_Elements(kCfgTypes)
 
@@ -344,13 +338,15 @@ static void _DrawCaption(void)
     GUI_DispStringInRect(pStr, &r, GUI_TA_LEFT | GUI_TA_VCENTER);
   }
 
+#if GUI_SUPPORT_TOUCH
   // Edit button (drawn but inert in Display mode - spec 6.7)
   GUI_DrawPicture(&picMAUAtlascsg, CF_EDIT_ICON_X0, CF_CAP_ICON_Y0,
                   picIdxCF_Edit20x20Cyan, 100);
   // Menu button at the right end of the caption bar
   GUI_DrawPicture(&picMAUAtlascsg, CF_CAP_ICON_X0, CF_CAP_ICON_Y0,
                   picIdxMA_Menu20x20Cyan, 100);
-
+#endif
+  
   // Caption separator line
   GUI_SetColor(crSeparator);
   GUI_DrawHLine(CF_CAP_SEP, CF_LIST_X + CF_FRAME_GAP, CF_INNER_X1);
@@ -421,7 +417,7 @@ static void _FlushForm(void)
 static void _FormatValue(const CfgRow* pRow, const TDevRegInfoItem* pInfo,
                          char* pBuf, int nLen)
 {
-  if (nLen <= 0) {
+  if (0 >= nLen) {
     return;
   }
   pBuf[0] = 0;
@@ -434,7 +430,7 @@ static void _FormatValue(const CfgRow* pRow, const TDevRegInfoItem* pInfo,
       return;
     }
     uint8_t idx = (uint8_t)uVal;
-    if (idx >= pRow->enumCount) {
+    if (pRow->enumCount <= idx) {
       idx = (uint8_t)(pRow->enumCount - 1);
     }
     const char* pTxt = GetMultiLangString(pRow->pEnum[idx]);
@@ -442,7 +438,7 @@ static void _FormatValue(const CfgRow* pRow, const TDevRegInfoItem* pInfo,
       int pos = snprintf(pBuf, nLen, "%s", pTxt);
       // Append dimension if present (e.g., REG_UART1_BAUDRATE -> "9600 bps")
       const char* pDim = RINF_GetDIMNameEx(pInfo);
-      if (nullptr != pDim && pos > 0 && pos < nLen) {
+      if (nullptr != pDim && 0 < pos && nLen > pos) {
         snprintf(pBuf + pos, nLen - pos, " %s", pDim);
       }
     }
@@ -455,7 +451,7 @@ static void _FormatValue(const CfgRow* pRow, const TDevRegInfoItem* pInfo,
   // image in _DrawItem before this runs.
   int pos = snprintf(pBuf, nLen, "%u", (unsigned)uVal);
   const char* pDim = RINF_GetDIMNameEx(pInfo);
-  if (nullptr != pDim && pos > 0 && pos < nLen) {
+  if (nullptr != pDim && 0 < pos && nLen > pos) {
     snprintf(pBuf + pos, nLen - pos, " %s", pDim);
   }
 }
@@ -463,14 +459,17 @@ static void _FormatValue(const CfgRow* pRow, const TDevRegInfoItem* pInfo,
 /// Draw one config row: name (left) + value/switch (right).
 static void _DrawItem(uint16_t uIdx)
 {
+  
   if (nullptr == s_pState) {
     return;
   }
+  
   if (uIdx >= s_pState->uCount ||
       uIdx < s_pState->uTopItem ||
       uIdx >= s_pState->uTopItem + CF_VISIBLE) {
     return;
   }
+  
   GUI_RECT rRow;
   _RowRect(&rRow, uIdx);
   bool bSelected = (uIdx == s_pState->uCurItem);
@@ -482,10 +481,12 @@ static void _DrawItem(uint16_t uIdx)
   if (nullptr == pRow) {
     return;
   }
+  
   const TDevRegInfoItem* pInfo = DevIntf_GetRegInfo(pRow->regNum);
   if (nullptr == pInfo) {
     return;
   }
+  
   const char* pcRegName = GetMultiLangString(pInfo->NameStrId);
   if (nullptr == pcRegName) {
     pcRegName = pInfo->pName;
@@ -515,7 +516,7 @@ static void _DrawItem(uint16_t uIdx)
     uint32_t uVal = DevReg_Read(pRow->regNum);
     uint32_t uImg = (0 != uVal) ? picIdxLV_SwitchON32x16Cyan
                                 : picIdxLV_SwitchOFF32x16Red;
-    int imgX0 = cellX0 + (CF_VAL_W - CF_SWITCH_W) / 2;
+    int imgX0 = rRow.x1 - CF_SWITCH_W - 8; //cellX0 + (CF_VAL_W - CF_SWITCH_W) / 2;
     int imgY0 = rRow.y0 + (CF_ROW_H - CF_SWITCH_H) / 2;
     GUI_DrawPicture(&picMAUAtlascsg, imgX0, imgY0, uImg, 100);
   } else {
@@ -529,7 +530,7 @@ static void _DrawItem(uint16_t uIdx)
     }
   }
 
-  if (bSelected) {
+  if (true == bSelected) {
     GUI_SetColor(crSelFrame);
     GUI_DrawRoundedFrame(rRow.x0, rRow.y0, rRow.x1, rRow.y1, 3, 1);
   }
@@ -565,10 +566,12 @@ static void _EnsureCursorVisible(void)
 
 static void _ClampTop(void)
 {
+  
   if (s_pState->uCount <= CF_VISIBLE) {
     s_pState->uTopItem = 0;
     return;
   }
+  
   uint16_t maxTop = s_pState->uCount - CF_VISIBLE;
   if (s_pState->uTopItem > maxTop) {
     s_pState->uTopItem = maxTop;
@@ -578,9 +581,11 @@ static void _ClampTop(void)
 /// Cycle to next config type (right), wrap around.
 static void _CycleNext(void)
 {
+  
   uint8_t idx = (uint8_t)s_pState->eType;
   idx = (idx + 1) % CF_TYPE_COUNT;
   _ChangeType((TConfigType)idx);
+  
   // Partial redraw: Caption + Row table + Scrollbar (no full screen flush)
   _RedrawCaption();
   _UpdateList();
@@ -590,9 +595,12 @@ static void _CycleNext(void)
 /// Cycle to prev config type (left), wrap around.
 static void _CyclePrev(void)
 {
+  
   uint8_t idx = (uint8_t)s_pState->eType;
   idx = (0 == idx) ? (CF_TYPE_COUNT - 1) : (idx - 1);
   _ChangeType((TConfigType)idx);
+  
+  // Partial redraw: Caption + Row table + Scrollbar (no full screen flush)
   _RedrawCaption();
   _UpdateList();
   _DrawScrollbar();
@@ -603,10 +611,12 @@ static void _CyclePrev(void)
 //=============================================================================
 static void _OnKey(uint16_t uwKey, bool bRepeat)
 {
+
   if (nullptr == s_pState) {
     return;
   }
-  if (bRepeat) {
+
+  if (true == bRepeat) {
     uint32_t now = GUI_GetTime();
     uint32_t threshold = (0 == s_pState->uKeyRepeat) ? CF_KEY_REPEAT_INIT_MS
                                                      : CF_KEY_REPEAT_MS;
@@ -641,9 +651,11 @@ static void _OnKey(uint16_t uwKey, bool bRepeat)
     }
     break;
   }
+  
   case KEY_DOWN: {
     uint16_t old = s_pState->uCurItem;
     uint16_t oldTop = s_pState->uTopItem;
+    
     if (s_pState->uCurItem + 1 < s_pState->uCount) {
       ++s_pState->uCurItem;
       _EnsureCursorVisible();
@@ -653,6 +665,7 @@ static void _OnKey(uint16_t uwKey, bool bRepeat)
     } else {
       break;
     }
+    
     if (s_pState->uTopItem != oldTop) {
       _UpdateList();
       _DrawScrollbar();
@@ -662,16 +675,22 @@ static void _OnKey(uint16_t uwKey, bool bRepeat)
     }
     break;
   }
-  case KEY_LEFT:
+  
+  case KEY_LEFT: {
     if (false == bRepeat) {
       _CyclePrev();
     }
     break;
-  case KEY_RIGHT:
+  }
+  
+  case KEY_RIGHT: {
     if (false == bRepeat) {
       _CycleNext();
     }
+    
     break;
+  }
+  
   default:
     break;
   }
@@ -755,10 +774,10 @@ static void _OnTouch(uint16_t action, int16_t x, int16_t y)
       }
       int16_t dx = x - s_pState->touchStartX;
       int16_t dy = y - s_pState->touchStartY;
-      int16_t adx = (dx >= 0) ? dx : (int16_t)(-dx);
-      int16_t ady = (dy >= 0) ? dy : (int16_t)(-dy);
-      if (adx >= CF_SWIPE_PX && adx > ady) {
-        if (dx > 0) {
+      int16_t adx = (0 <= dx) ? dx : (int16_t)(-dx);
+      int16_t ady = (0 <= dy) ? dy : (int16_t)(-dy);
+      if (CF_SWIPE_PX <= adx && ady < adx) {
+        if (0 < dx) {
           _CycleNext();
         } else {
           _CyclePrev();
@@ -793,22 +812,18 @@ static void _OnTick(uint32_t uNow)
 static void _Init(const void* argument)
 {
   if (nullptr != s_pState) {
-#ifndef __vmSIMULATOR__
     RAM_Free(s_pState);
-#else
-    delete s_pState;
-#endif
+
     s_pState = nullptr;
   }
-#ifndef __vmSIMULATOR__
+
   s_pState = static_cast<TConfigFormState*>(RAM_Malloc(sizeof(TConfigFormState)));
-#else
-  s_pState = new TConfigFormState;
-#endif
+
   DEV_ASSERT(nullptr == s_pState, GFC_OutOfMem);
   if (nullptr == s_pState) {
     return;
   }
+  
   memset(s_pState, 0, sizeof(TConfigFormState));
   // Initial config type from the menu argument; default to cgtLogic.
   TConfigType eInit = (nullptr != argument)
@@ -822,10 +837,13 @@ static void _Init(const void* argument)
 
 static void _Show(const void* argument)
 {
+
   (void)argument;
+
   if (nullptr == s_pState) {
     return;
   }
+
   _ClampTop();
   _FlushForm();
   _UpdateList();
@@ -834,38 +852,43 @@ static void _Show(const void* argument)
 
 static void _Close(const void* argument)
 {
+
   (void)argument;
+
   if (nullptr != s_pState) {
-#ifndef __vmSIMULATOR__
     RAM_Free(s_pState);
-#else
-    delete s_pState;
-#endif
+
     s_pState = nullptr;
   }
 }
 
 static void _OnMessage(GM_MESSAGE* pMsg)
 {
+
   if (nullptr == pMsg || nullptr == s_pState) {
     return;
   }
+
   switch (pMsg->MsgId) {
   case GM_TIMER_TICK:
     _OnTick(static_cast<uint32_t>(pMsg->Data.v));
     break;
+  
   case GM_KEYDOWN:
     _OnKey(pMsg->Param, false);
     pMsg->MsgId = 0;
     break;
+
   case GM_KEYPRESS:
     _OnKey(pMsg->Param, true);
     pMsg->MsgId = 0;
     break;
+
   case GM_KEYUP:
     _OnKeyUp(pMsg->Param);
     pMsg->MsgId = 0;
     break;
+
 #if GUI_SUPPORT_TOUCH
   case GM_TOUCH: {
     int32_t packed = pMsg->Data.v;
@@ -876,11 +899,11 @@ static void _OnMessage(GM_MESSAGE* pMsg)
     break;
   }
 #endif
+
   default:
     break;
   }
 }
-
 //=============================================================================
 // Form descriptor + registration (WID_ConfigForm)
 //=============================================================================

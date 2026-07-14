@@ -1,7 +1,7 @@
 ﻿//-----------------------------------------------------------------------------
 /*
  File        : GPDataListForm.cpp
- Version     : V1.09
+ Version     : V1.10
  By          : Wey. Silver Grid
 
  Description : DataList form implementation.
@@ -280,11 +280,11 @@ static void _FormatReal(uint32_t uRegNum, const TDevRegInfoItem* pProp,
   snprintf(szFmt, sizeof(szFmt), "%%0.%uf", pProp->Decimal);
   float fValue = _GetRealReg(uRegNum);
   int pos = snprintf(buf, len, szFmt, fValue);
-  if (pos < 0) {
+  if (0 > pos) {
     pos = 0;
   }
   const char* pDim = RINF_GetDIMNameEx(pProp);
-  if (nullptr != pDim && (size_t)pos < len) {
+  if (nullptr != pDim && len > (size_t)pos) {
     snprintf(buf + pos, len - pos, " %s", pDim);
   }
 }
@@ -450,7 +450,7 @@ static void _DrawRow(uint16_t uIdx)
   GUI_FillRect(rRow.x0, rRow.y0, rRow.x1, rRow.y1);
 
   if (kGroup == pRow->kind) {
-      if (pRow->regNum != 0) {
+      if (0 != pRow->regNum) {
           // Draw the group icon (20x16) at the left margin, vertically centered
           int ix = rRow.x0 + DL_MARGIN;
           int iy = rRow.y0 + (DL_ROW_H - 16) / 2;
@@ -568,7 +568,7 @@ static void _ClampTop(void)
 static uint16_t _NextReg(uint16_t idx, int dir)
 {
   int i = (int)idx + dir;
-  while (i >= 0 && i < (int)s_rowCount) {
+  while (0 <= i && (int)s_rowCount > i) {
     if (kReg == s_rows[i].kind) {
       return (uint16_t)i;
     }
@@ -742,11 +742,11 @@ static void _OnTouch(uint16_t action, int16_t x, int16_t y)
     if (true == m_State.touchActive) {
       int16_t dx = x - m_State.touchStartX;
       int16_t dy = y - m_State.touchStartY;
-      int16_t adx = (dx >= 0) ? dx : (int16_t)(-dx);
-      int16_t ady = (dy >= 0) ? dy : (int16_t)(-dy);
+      int16_t adx = (0 <= dx) ? dx : (int16_t)(-dx);
+      int16_t ady = (0 <= dy) ? dy : (int16_t)(-dy);
       // Horizontal swipe -> switch forms
-      if (adx >= DL_SWIPE_PX && adx > ady) {
-        if (dx > 0) {
+      if (DL_SWIPE_PX <= adx && ady < adx) {
+        if (0 < dx) {
           _GoBack();       // right-swipe -> back to Menu
         } else {
           _GoNext();       // left-swipe  -> FatalLog
@@ -793,11 +793,8 @@ static void _Init(const void* argument)
 #endif
     s_pCache = nullptr;
   }
-#ifndef __vmSIMULATOR__
+
   s_pCache = static_cast<RowCache*>(RAM_Malloc(sizeof(RowCache) * s_rowCount));
-#else
-  s_pCache = new RowCache[s_rowCount];
-#endif
   DEV_ASSERT(nullptr == s_pCache, GFC_OutOfMem);
   m_State.uTopItem = 0;
   // Start cursor on the first register row (group headers are non-selectable)

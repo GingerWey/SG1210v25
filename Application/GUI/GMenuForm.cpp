@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPMenuForm.cpp
- Version     : V2.05
+ Version     : V2.06
  By          : Wey. Silver Grid
 
  Description : 主菜单表单 -- 2×5 图标网格，键盘/触屏导航。
@@ -192,8 +192,9 @@ static int _ItemCol(int idx) { return idx % MU_GRID_COLS; }
 //-----------------------------------------------------------------------------
 static int _RowColToIdx(int row, int col)
 {
-  if (row < 0 || row >= MU_GRID_ROWS || col < 0 || col >= MU_GRID_COLS)
+  if (0 > row || MU_GRID_ROWS <= row || 0 > col || MU_GRID_COLS <= col) {
     return -1;
+  }
   return row * MU_GRID_COLS + col;
 }
 
@@ -391,7 +392,9 @@ static void _MoveTo(int row, int col)
 {
 
   int iNew = _RowColToIdx(row, col);
-  if (iNew < 0 || iNew == m_State.iCurItem) return;
+  if (0 > iNew || m_State.iCurItem == iNew) {
+    return;
+  }
 
   int iOld = m_State.iCurItem;
   m_State.iCurItem = iNew;
@@ -454,7 +457,7 @@ static void _Show(const void* argument)
 {
   (void)argument;
   // 首次显示时初始化为第0项，从子窗口返回时保持原选中项
-  if (m_State.iCurItem < 0 || m_State.iCurItem >= (int)MU_ITEM_COUNT)
+  if (0 > m_State.iCurItem || (int)MU_ITEM_COUNT <= m_State.iCurItem)
   {
     m_State.iCurItem = 0;
   }
@@ -495,17 +498,19 @@ static void _OnKeyDown(uint16_t uwKey)
     break;
 
   case KEY_LEFT:
-    if (col > 0)
+    if (0 < col) {
       _MoveTo(row, col - 1);
-    else
+    } else {
       _MoveTo(row, MU_GRID_COLS - 1);  // 行内循环
+    }
     break;
 
   case KEY_RIGHT:
-    if (col < MU_GRID_COLS - 1)
+    if (MU_GRID_COLS - 1 > col) {
       _MoveTo(row, col + 1);
-    else
+    } else {
       _MoveTo(row, 0);                  // 行内循环
+    }
     break;
 
   case KEY_ENTER:
@@ -561,7 +566,7 @@ static void _OnTouch(uint16_t action, uint16_t x, uint16_t y)
     {
       // 移动到触摸的菜单项
       int iHit = _HitItem(x, y);
-      if (iHit >= 0 && iHit != m_State.iCurItem)
+      if (0 <= iHit && m_State.iCurItem != iHit)
       {
         int iOld = m_State.iCurItem;
         m_State.iCurItem = iHit;
@@ -581,7 +586,7 @@ static void _OnTouch(uint16_t action, uint16_t x, uint16_t y)
       }
       // 菜单项 → 先更新选中态视觉，再激活
       int iHit = _HitItem(x, y);
-      if (iHit >= 0)
+      if (0 <= iHit)
       {
         int iOld = m_State.iCurItem;
         m_State.iCurItem = iHit;

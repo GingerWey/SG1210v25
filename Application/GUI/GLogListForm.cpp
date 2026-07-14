@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GLogListForm.cpp
- Version     : V1.03
+ Version     : V1.04
  By          : Wey. Silver Grid
 
  Description : LogList form — log query form.
@@ -637,10 +637,10 @@ static void _OnTouch(uint16_t action, int16_t x, int16_t y)
         y <  LL_CONTENT_Y0 + LL_VISIBLE * LL_ROW_H) {
       uint16_t idx = s_pState->uTopItem +
                      (uint16_t)((y - LL_CONTENT_Y0) / LL_ROW_H);
-      if (idx >= s_pState->uCount) {
-        idx = (s_pState->uCount > 0) ? s_pState->uCount - 1 : 0;
+      if (s_pState->uCount <= idx) {
+        idx = (0 < s_pState->uCount) ? s_pState->uCount - 1 : 0;
       }
-      if (idx != s_pState->uCurItem) {
+      if (s_pState->uCurItem != idx) {
         uint16_t old = s_pState->uCurItem;
         s_pState->uCurItem = idx;
         _DrawItem(old);
@@ -688,10 +688,10 @@ static void _OnTouch(uint16_t action, int16_t x, int16_t y)
       }
       int16_t dx = x - s_pState->touchStartX;
       int16_t dy = y - s_pState->touchStartY;
-      int16_t adx = (dx >= 0) ? dx : (int16_t)(-dx);
-      int16_t ady = (dy >= 0) ? dy : (int16_t)(-dy);
-      if (adx >= LL_SWIPE_PX && adx > ady) {
-        if (dx > 0) {
+      int16_t adx = (0 <= dx) ? dx : (int16_t)(-dx);
+      int16_t ady = (0 <= dy) ? dy : (int16_t)(-dy);
+      if (LL_SWIPE_PX <= adx && ady < adx) {
+        if (0 < dx) {
           _CycleNext();
         } else {
           _CyclePrev();
@@ -734,15 +734,13 @@ static void _Init(const void* argument)
 #endif
     s_pState = nullptr;
   }
-#ifndef __vmSIMULATOR__
+
   s_pState = static_cast<TLogFormState*>(RAM_Malloc(sizeof(TLogFormState)));
-#else
-  s_pState = new TLogFormState;
-#endif
   DEV_ASSERT(nullptr == s_pState, GFC_OutOfMem);
   if (nullptr == s_pState) {
     return;
   }
+
   memset(s_pState, 0, sizeof(TLogFormState));
   // Initial category from the menu argument (e.g. mltAutoCtrl for Fatal-Log);
   // default to mltAutoCtrl when no argument is supplied.
