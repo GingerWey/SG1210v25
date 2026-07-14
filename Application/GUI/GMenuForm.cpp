@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GPMenuForm.cpp
- Version     : V2.04
+ Version     : V2.05
  By          : Wey. Silver Grid
 
  Description : 主菜单表单 -- 2×5 图标网格，键盘/触屏导航。
@@ -26,7 +26,8 @@
      - 选取框填充使用 GUI_AA_FillRoundedRect + GUI_SetAlpha 半透明
      - 需 GUI_AA_EnableHiRes() 全局启用（GUICntr.cpp GUIStart）
 
- Date        : 2026.07.14 (V2.04 -- 使用 NUM_Elements 宏自动计算菜单项数量)
+ Date        : 2026.07.14 (V2.05 -- 简化选中项保持：静态初始化 iCurItem=-1)
+              2026.07.14 (V2.04 -- 使用 NUM_Elements 宏自动计算菜单项数量)
               2026.07.14 (V2.03 -- 从子窗口返回时保持选中项索引，不重置为0)
               2026.06.29 (V2.02 -- clip-redraw 替代 MemDev；AA 半透明选取框)
               2026.06.29 (V2.01 -- MemDev 快照还原替代黑色填充，修复透明图标背景)
@@ -163,12 +164,11 @@ static const TMenuItem kMenuItems[] =
 // Form 状态
 //=============================================================================
 typedef struct tagMenuState {
-  int  iCurItem;       // 当前选中项索引 (0..9)
+  int  iCurItem;       // 当前选中项索引 (0..9)，初始 -1 表示未初始化
   bool bEnterDown;     // Enter 按下状态（控制移位绘制）
-  bool bInitialized;   // 是否已初始化（区分首次显示和返回恢复）
 } TMenuState;
 
-static TMenuState m_State;
+static TMenuState m_State = { -1, false };  // 静态初始化
 
 //=============================================================================
 // 辅助: (x,y,w,h) → emWin GUI_RECT
@@ -454,10 +454,9 @@ static void _Show(const void* argument)
 {
   (void)argument;
   // 首次显示时初始化为第0项，从子窗口返回时保持原选中项
-  if (!m_State.bInitialized)
+  if (m_State.iCurItem < 0 || m_State.iCurItem >= (int)MU_ITEM_COUNT)
   {
     m_State.iCurItem = 0;
-    m_State.bInitialized = true;
   }
   m_State.bEnterDown = false;
   _Redraw();
