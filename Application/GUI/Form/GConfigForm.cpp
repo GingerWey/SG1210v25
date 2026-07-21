@@ -1,32 +1,55 @@
 //-----------------------------------------------------------------------------
 /*
  File        : GConfigForm.cpp
- Version     : V1.10
+ Version     : V2.00
  By          : Wey. Silver Grid
 
- Description : Config form - parameter configuration form.
-               Displays configuration registers (Logic / Device / Serial /
-               Ethernet) grouped by config type. Style aligned with
-               LogListForm (outer/inner frames + right scrollbar + key
-               throttle) plus a top Caption showing the current config type
-               name + icon, a Menu button and an Edit button.
-               Per SG1210v25 form design spec section VI.
+ Description : Config form - parameter configuration form with full dialog
+               integration for register editing.
 
-               Behaviour (Display mode only, spec 6.7):
-                 - Opened from GMenuForm config items (WID_ConfigForm); the
-                   init argument selects the initial config type.
-                 - ESC / Menu-icon tap -> PopForm back to GMenuForm.
-                 - UP/DOWN navigate config rows (held key auto-repeats,
-                   throttled).
-                 - LEFT/RIGHT (or swipe) cycle the config type
-                   cgtLogic <-> cgtDevice <-> cgtSerial <-> cgtEthernet.
-                   LEFT/RIGHT respond to initial keydown only (no key-repeat)
-                   to avoid rapid category cycling while key is held.
-                 - Static display: load on entry, reload on category switch.
-                 - Edit button drawn but inert (editor dialogs not yet
-                   designed - spec 6.7).
+               Display: Shows configuration registers (Logic / Device / Serial /
+               Ethernet) grouped by config type. Style aligned with LogListForm
+               (outer/inner frames + right scrollbar + key throttle) plus a top
+               Caption showing the current config type name + icon, a Menu button
+               and an Edit button. Per SG1210v25 form design spec section VI.
 
- Date        : 2026.07.14 (V1.10 — Yoda-style for variable comparisons by scope)
+               Editing (Phase 6 - Dialog Integration):
+                 All 8 register types fully editable with dialog support:
+                 - SIT_VAT_BIN: Direct toggle (no dialog)
+                 - SIT_VAT_INT/HEX/REAL: GNumRegDialog (number keyboard)
+                 - SIT_VAT_ENUM: GListbox (in-place enum selection)
+                 - SIT_VAT_DATETIME: GDatetimeDialog (6-field editor)
+                 - SIT_VAT_PASSWORD: Permission gate → GLoginDialog → GNumRegDialog
+                 - IP Address: GIPAddressDialog (4-octet editor)
+
+                 Dialog resources from GDialogRes (extern declarations):
+                 - g_numRegDialogConfig, g_loginDialogConfig
+                 - g_ipDialogConfig, g_datetimeDialogConfig
+                 - g_listboxStyle
+                 - All with professional icons from ImageRes DLGAtlas
+                 - Array counts via NUM_Elements macro (type-safe, auto-calculated)
+
+               Behaviour:
+                 - Opened from GMenuForm config items (WID_ConfigForm); init
+                   argument selects the initial config type.
+                 - ESC / Menu-icon tap → PopForm back to GMenuForm.
+                 - UP/DOWN navigate config rows (held key auto-repeats, throttled).
+                 - LEFT/RIGHT (or swipe) cycle config types:
+                   cgtLogic ↔ cgtDevice ↔ cgtSerial ↔ cgtEthernet.
+                   LEFT/RIGHT respond to initial keydown only (no key-repeat).
+                 - ENTER / Content-area tap → trigger edit dialog for focused row.
+                 - Permission gate: if register requires password, show GLoginDialog
+                   first; on success, re-trigger edit with permission granted.
+                 - Dialog lifecycle: create → show → accept/cancel → write/abort →
+                   destroy → return to form.
+                 - Static display reloaded after successful register write.
+
+ Date        : 2026.07.21 (V2.00 — Phase 6 dialog integration complete:
+               GLoginDialog, GNumRegDialog, GIPAddressDialog, GDatetimeDialog,
+               GListbox; all resources from GDialogRes with icons and NUM_Elements;
+               permission gate with DevRegs API; datetime write via DevIntf_setDateTime;
+               enum editing via RINF_getRegEnumList; touch-to-edit support)
+              2026.07.14 (V1.10 — Yoda-style for variable comparisons by scope)
               2026.07.14 (V1.09 — use RAM_Malloc/RAM_Free uniformly)
               2026.07.14 (V1.08 — Yoda-style comparisons in conditionals)
               2026.07.14 (V1.07 - 使用 NUM_Elements 宏计算数组元素个数)
