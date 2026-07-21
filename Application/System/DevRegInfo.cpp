@@ -13,9 +13,12 @@
 #include "DevRegInfo.h"
 
 #include "DevIntf.h"
-
 #include "DevRegs.h"
+#include "DevTypes.h"
+#include "Strings/TextStrs.h"
 
+#include "DevBuffer.h"
+#include <cstdint>
 #include <string.h>
 //=============================================================================
 // 本地宏
@@ -175,5 +178,53 @@ const char* RINF_GetDIMName( uint32_t uRegNum )
   // 取寄存器描述
   const TDevRegInfoItem* pInfo = DevIntf_GetRegInfo( uRegNum );
   return RINF_GetDIMNameEx( pInfo );
+}
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Register enum option items libary
+//-----------------------------------------------------------------------------\
+// UART Parity options (multi-language string IDs)
+const uint16_t lstUARTParity[] = {
+  idUartParity0,    // "无校验"
+  idUartParity1,    // "奇校验"
+  idUartParity2     // "偶校验"
+};
+#define NUM_lstUARTParity NUM_Elements(lstUARTParity)
+//-----------------------------------------------------------------------------\
+// UART Baudrate options (multi-language string IDs)
+// REG_UART1_BAUDRATE stores index (0-4), not the actual baud value
+const uint16_t lstUARTBaud[] = {
+  idUartBaud1200,   // "1200"
+  idUartBaud2400,   // "2400"
+  idUartBaud4800,   // "4800"
+  idUartBaud9600,   // "9600"
+  idUartBaud19200   // "19200"
+};
+#define NUM_lstUARTBaud NUM_Elements(lstUARTBaud)
+//-----------------------------------------------------------------------------\
+
+// Get enum option list for a given register
+// Returns: item count (0 if not found)
+// Output:  pList points to the string ID array
+int RINF_getRegEnumList(uint32_t uRegNum, const uint16_t*& pList)
+{
+
+  int iCount;
+  switch( uRegNum ) {
+    case REG_UART1_BAUDRATE:
+      pList  = lstUARTBaud;
+      iCount = NUM_lstUARTBaud;
+      break;
+    case REG_UART1_PARITY:
+      pList  = lstUARTParity;
+      iCount = NUM_lstUARTParity;
+      break;
+    default:
+      pList = nullptr;
+      iCount = 0;
+      break;
+  }
+
+  return iCount;
 }
 //-----------------------------------------------------------------------------

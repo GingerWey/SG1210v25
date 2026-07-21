@@ -9,7 +9,6 @@ SG1210 智能电力仪表固件，基于 STM32F407 + FreeRTOS + emWin。
 - **RTOS**: FreeRTOS Kernel V10.3.1 (via CMSIS-RTOS v2 wrapper)
 - **HAL**: STM32F4xx HAL Driver (STMicroelectronics)
 - **GUI**: emWin V6.56 (SEGGER)
-- **图像编解码**: CSG (Compact Scalable Graphic) — 自研格式，位于 Middlewares/emWin/csgimage/
 - **编译器**: ARM Compiler V6.22 (ARMCLANG)
 - **IDE**: Keil MDK (uVision)
 - **编程语言**: C++17 / C11
@@ -29,8 +28,10 @@ SG1210v21/
 │   ├── COM/              # 通信栈：UART Socket、Modbus RTU从站、协议层、环形缓冲
 │   ├── Config/           # 设备配置宏、FreeRTOSConfig.h、OS端口配置
 │   ├── Device/           # 设备逻辑：线圈控制、DFT(64/80点)、数值处理、采样、录波
-│   ├── GUI/              # GUI 表单系统：主界面、菜单、启动画面、仪表盘、事件浏览器等
-│   │   └── Graphics/     # 自研 x128 图形驱动
+│   ├── GUI/              # GUI 交互系统
+│   │   ├── Dialog/       # 各种Form: 主界面、菜单、启动画面、参数设置、事件浏览器等
+│   │   ├── Form/         # 对话框相关源代码
+│   │   └── Graphics/     # 图像资质
 │   ├── Mics/             # 杂项：AES128、CRC16/32、中值平均滤波、RAM堆分配、随机数
 │   ├── System/           # 核心系统：设备类型、寄存器、缓冲区、时钟、调试、事件管理、多语言字符串
 │   └── Tasks/            # RTOS 任务：AppTask、CtrlTask、HMITask、UARTTask
@@ -94,16 +95,6 @@ start "" "D:/Works/SilverGrid/SG1210/Firmware/SG1210v21/Sim/Build/SG1210Sim.exe"
 
 - 配置选择 Debug | Win32 或 Release | Win32
 - 输出：`Sim/Build/SG1210Sim.exe`
-
-**预期警告（非本次改动引入，可忽略）**
-
-| 警告 | 来源文件 | 原因 |
-|------|----------|------|
-| C4244 | NumProc.cpp | double → float 截断（MCU 数学运算） |
-| C4996 | DevRegInfo.cpp, GPMainForm.cpp 等 | sprintf/strncpy MSVC 安全警告，Sim 环境无害 |
-| C4018 | GPEventBrowserForm.cpp | signed/unsigned 比较（MCU 数据类型） |
-| C4305 | NumProc.cpp | double → const float 初始化截断 |
-| C4003 | GPMainForm.cpp | GetCoilState 宏参数不足（MCU 宏在 Sim 下展开） |
 
 **常见问题**
 
@@ -172,91 +163,11 @@ start "" "D:/Works/SilverGrid/SG1210/Firmware/SG1210v21/Sim/Build/SG1210Sim.exe"
 - `saturation helpers, atlas sub-picture, picIndex param`
 
 ### 注释语言
-- **Application/ 和 Drivers/Peripherals/**: 中文注释（简体中文）
-- **Middlewares/ (FreeRTOS/emWin/CSG)**: 英文注释
+- **注释语言**：英文
 - **新建文件**: 统一使用 UTF-8 with BOM
-- **旧有文件**: 大部分可转 UTF-8，以下三类**必须保持 GB2312**（详见下方中文显示原理）：
-  - 所有 Form 文件 (`Application/GUI/GP*.cpp/h`、`GUICntr.*`、`GUI*Dialog.*` 等)
+- **旧有文件**: 大部分可转 UTF-8，以下两类**必须保持 GB2312**（详见下方中文显示原理）：
   - 中文字符串 (`Application/System/Strings/StrsCHS.h`、`TextStrs.cpp`)
   - 中文字库文件（文件名含 `FontCHS` 标识，如 `FontCHS24LTH.cpp`、`FontCHS16LTH.cpp`）
-  - 注：`PictureRes.*`、`CSGDraw.*`、`x128.*` 等图像处理文件不涉及中文显示，可转 UTF-8
-
-### 缩进与格式
-- 使用空格缩进（不用 Tab），2空格缩进
-- 函数大括号独占一行
-- 分隔线：`//-----------------------------------------------------------------------------` (77个短横线)
-
-### extern "C" 模式
-所有需要 C 链接的头文件必须包裹：
-```c
-#ifdef __cplusplus
-extern "C" {
-#endif
-// ...
-#ifdef __cplusplus
-}
-#endif
-```
-
-### 禁止单行代码
-- 单行if要加{}对, 及else(可空)
-  if( ? ) {
-    then
-  } else {
-    ...
-  }
-- 类似的：for, while...
-  - 不允许下方出现不带{}的代码
-- 禁止将{}放一行
-  - 不可以：
-  if( ? ) { then. }
-  - 要写成：
-  if( ? ) {
-    then
-  }
-
-### if的写法(Yoda-style comparisons)
-- 变量与数字比较：
-  - 数字在前，变量在后
-  if( n == 0 )  不可以
-  if( 0 == n )  可以
-- 变量与常量比较：
-  - 常量在前，变量在后
-  if( n == const )  不可以
-  if( const == n )  可以
-- 变量与表达式比较
-  - 表达式在前，变量在后
-  if( n == x + 1)   不可以
-  if( x + 1 == n )  可以
-- 变量与变量比较：
-  - 局部变量在前，全局变量在后
-  if( m_n == n )  不可以
-  if( n == m_n )  可以
-- 为0或空指针判断
-  - 为0判断
-   if(n)  不可以
-   if(0 != n ) 可以
-   if(!n) 不可以
-   if(0 == n ) 可以
-  - 为空指针判断
-   if(p)  不可以
-   if(nullptr != p ) 可以
-   if(!p) 不可以
-   if(nullptr == p ) 可以
-- 为true/false判断
-  - 显式写判断
-    if( btrans )  不可以
-    if( true == btrans )  可以
-    if( !btrans ) 不可以
-    if( false == btrans ) 可以
-
-
-### 变体文件 (`_` 后缀)
-部分文件存在 `_` 后缀变体，用于不同硬件版本：
-- `CoilCtrl.cpp` / `CoilCtrl_.cpp` — 不同线圈控制逻辑
-- `GPMainForm.cpp` / `GPMainForm_.cpp` — 不同主界面渲染
-- `RamHeap.cpp` / `RamHeap_.cpp` — 不同内存分配策略
-- 在 Keil 工程中通过排除编译开关选择具体变体
 
 ## 核心架构
 
@@ -284,32 +195,6 @@ extern "C" {
   - `GUICntr.h`: `#define` 宏（兼容旧代码，`#include` 顺序先于 GForm.h）
   - `GForm.h`: `constexpr uint16_t`（新代码推荐，`#ifndef WID_FORMBEGIN` 防护）
   - **修改 WID_ 时必须两处同步更新**
-
-#### 表单注册清单
-
-| WID | 常量 | 符号 | 文件 | Sim | MCU |
-|-----|------|------|------|:---:|:---:|
-| 100 | WID_SplashForm | FSplashForm | GPSplashForm.cpp | ✅ | ✅ |
-| 101 | WID_MenuForm | FMainMenuForm | GPMenuForm.cpp | ✅ | ✅ |
-| 102 | WID_MainForm | FMainForm | GPMainForm.cpp | ✅ | ✅ |
-| 103 | WID_EventListForm | FEventBrowserForm | GPEventBrowserForm.cpp | ✅ | ✅ |
-| 104 | WID_CTRLConfigForm | FCTRLConfigForm | GUICtrlConfigDialog.cpp | — | ✅ |
-| 105 | WID_UARTConfigForm | FUARTConfigForm | GUIUARTConfigDialog.cpp | — | ✅ |
-| 106 | WID_DevInfoForm | FDevInfoForm | GPDevInfoForm.cpp | — | ✅ |
-| 107 | WID_MessageForm | FMessageForm | GPMessageForm.cpp | — | ✅ |
-| 108 | WID_ConfigForm | FConfigForm | GPConfigForm.cpp | — | ✅ |
-| 109 | WID_GuageForm | FGuageForm | GPGuageForm.cpp | — | ✅ |
-| 110 | WID_FatalForm | FFatalForm | GPFatalForm.cpp | — | ✅ |
-| 111 | WID_LoginDialog | FLoginDialog | GPLoginDialog.cpp | — | ✅ |
-| 112 | WID_TimeDialog | FTimeDialog | GPTimeDialog.cpp | — | ✅ |
-| 113 | WID_WLGListForm | FWavelogListForm | GPWLGListForm.cpp | — | ✅ |
-| 114 | WID_WLGViewForm | FWavelogViewForm | GPWLGViewForm.cpp | — | ✅ |
-
-> MCU 专用表单依赖 FreeRTOS (`osMutexWait`/`osWaitForever`)、STM32 HAL (`rtc.h`/`stm32f4xx_hal.h`)、或 MCU 专有字体 (`FontCHS12x12HT.h`/`GUIFontCHS12x12.h`)，无法在 Sim 中编译。
-
-- 自定义消息系统 `GM_MESSAGE` (MsgId + Param + Data联合体)
-  - `GM_FORM_ACTIVATED`(18) / `GM_FORM_DEACTIVATED`(19) — Phase 1 新增
-- 显示驱动：ST7789S via FSMC
 
 #### 中文显示原理
 
@@ -489,6 +374,8 @@ for (int i = 0; i < n; ++i) {
     LCD_DATADDR = uwColor;  // ST7789 列地址自动+1
 }
 ```
+**Form中的内存分配**
+Form中的内存分配采用RAMHeap中的方法
 
 ### GPMainForm 时钟更新优化
 
@@ -521,11 +408,3 @@ const GUI_RECT* pClip = GUI_GetClipRect();
 - HMITask 栈 8KB，放栈上必然 HardFault
 - 固定用法：`static CSGDecoderState state;` → `.bss` 段
 - 代价：函数不可重入（GUI 单线程无影响）
-
-### emWin Alpha 混合在 Win32 模拟器下不可用
-
-- `GUI_EnableAlpha(1)` + `GUI_SetAlpha()` → Sim 无效
-- `GUI_AlphaEnableFillRectHW(1)` → Sim 无效
-- `GUI_AA_FillRoundedRect` → 需 `GUI_AA_EnableHiRes()`，但会引起全局渲染异常
-- `GUI_MEMDEV_CreateFixed32` 快照/还原 → Win32 驱动不支持往返
-- **结论**：Sim 下不要依赖 alpha 混合和 MemDev 快照。选取框改用空心圆角矩形边框。

@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : RamHeap.cpp
  Version     : V1.10
@@ -22,12 +22,75 @@
 //-----------------------------------------------------------------------------
 // 0x4000 余  0x2470
 #define  TOTAL_RAMHEAP_SIZE   0x02000     // 12KB
+
+#define  ramBYTE_ALIGNMENT    8
 //-----------------------------------------------------------------------------
 /* Block sizes must not get too small. */
 #define RAM_MINIMUM_BLOCK_SIZE  ( (size_t)( xHeapStructSize << 1 ) )
 
 /* Assumes 8bit bytes! */
 #define RAM_BITS_PER_BYTE    ( (size_t)8 )
+#if ramBYTE_ALIGNMENT == 32
+ #define ramBYTE_ALIGNMENT_MASK (0x001f)
+#endif
+
+#if ramBYTE_ALIGNMENT == 16
+ #define ramBYTE_ALIGNMENT_MASK (0x000f)
+#endif
+
+#if ramBYTE_ALIGNMENT == 8
+ #define ramBYTE_ALIGNMENT_MASK (0x0007)
+#endif
+
+#if ramBYTE_ALIGNMENT == 4
+ #define ramBYTE_ALIGNMENT_MASK (0x0003)
+#endif
+
+#if ramBYTE_ALIGNMENT == 2
+ #define ramBYTE_ALIGNMENT_MASK (0x0001)
+#endif
+
+#if ramBYTE_ALIGNMENT == 1
+ #define ramBYTE_ALIGNMENT_MASK (0x0000)
+#endif
+
+#ifndef mtCOVERAGE_TEST_MARKER
+ #define mtCOVERAGE_TEST_MARKER()
+#endif
+
+#ifndef ramheapASSERT
+ #define ramheapASSERT(x)              \
+    {                                 \
+        if ((x) == 0)                 \
+            DEV_FAULT(GFC_SystemErr); \
+    }
+#endif
+
+#ifndef traceMALLOC
+ #define traceMALLOC(pvAddress, uiSize)
+#endif
+
+#ifndef traceFREE
+ #define traceFREE(pvAddress, uiSize)
+#endif
+
+#ifdef __vmSIMULATOR__
+ #define ramTaskSuspendAll() 
+ #define ramTaskResumeAll()
+
+ #define ramEXIT_CRITICAL()
+ #define ramENTER_CRITICAL()
+    
+ #define ramMAX_DELAY         0xffffffffUL          
+#else
+ #define ramTaskResumeAll()   (void)xTaskResumeAll()
+ #define ramTaskSuspendAll()  vTaskSuspendAll()
+
+ #define ramENTER_CRITICAL()  taskENTER_CRITICAL()
+ #define ramEXIT_CRITICAL()   taskEXIT_CRITICAL()
+ 
+ #define ramMAX_DELAY         portMAX_DELAY
+#endif
 
 //=============================================================================
 // 局部数据结构 
@@ -50,8 +113,8 @@ static uint8_t ucRAMHeap[ TOTAL_RAMHEAP_SIZE ];
 /* The size of the structure placed at the beginning of each allocated memory
   block must by correctly byte aligned. */
 static const size_t xHeapStructSize  = 
-           ( sizeof(RAMBlockLink_t) + ( (size_t)(portBYTE_ALIGNMENT - 1) ) ) & 
-           ~( (size_t)portBYTE_ALIGNMENT_MASK );
+           ( sizeof(RAMBlockLink_t) + ( (size_t)(ramBYTE_ALIGNMENT - 1) ) ) & 
+           ~( (size_t)ramBYTE_ALIGNMENT_MASK );
 
 /* Create a couple of list links to mark the start and end of the list. */
 static RAMBlockLink_t xStart, *RAM_pblEnd = nullptr;
@@ -78,7 +141,7 @@ static size_t xRAMBlockAllocatedBit = 0;
    the block in front it and/or the block behind it if the memory blocks are
    adjacent to each other.
 */
-static void RAM_InsertBlockIntoFreeList ( RAMBlockLink_t *pxBlockToInsert );
+static void RAM_InsertBlockIntoFreeList(RAMBlockLink_t* pxBlockToInsert);
 
 //=============================================================================
 // 全局方法
@@ -90,7 +153,7 @@ void *RAM_Malloc ( size_t xWantedSize )
 
   DEV_ASSERT( (0 == xWantedSize), GFC_ErrParam );
 
-  vTaskSuspendAll();
+  ramTaskSuspendAll();
     {
     /* If this is the first call to malloc then the heap will require
       initialisation to setup the list of free blocks. */
@@ -117,11 +180,11 @@ void *RAM_Malloc ( size_t xWantedSize )
 
         /* Ensure that blocks are always aligned to the required number
           of bytes. */
-        if( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
+        if( ( xWantedSize & ramBYTE_ALIGNMENT_MASK ) != 0x00 )
           {
           /* Byte alignment required. */
-          xWantedSize += ( portBYTE_ALIGNMENT - (xWantedSize & portBYTE_ALIGNMENT_MASK) );
-          configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+          xWantedSize += ( ramBYTE_ALIGNMENT - (xWantedSize & ramBYTE_ALIGNMENT_MASK) );
+          ramheapASSERT( ( xWantedSize & ramBYTE_ALIGNMENT_MASK ) == 0 );
           }
         else
           {
@@ -168,7 +231,7 @@ void *RAM_Malloc ( size_t xWantedSize )
               cast is used to prevent byte alignment warnings from the
               compiler. */
             pxNewBlockLink = (RAMBlockLink_t*)( ( (uint8_t*) pxBlock ) + xWantedSize );
-            configASSERT( (((size_t)pxNewBlockLink) & portBYTE_ALIGNMENT_MASK) == 0 );
+            ramheapASSERT( (((size_t)pxNewBlockLink) & ramBYTE_ALIGNMENT_MASK) == 0 );
 
             /* Calculate the sizes of two blocks split from the single block. */
             pxNewBlockLink->xBlockSize = pxBlock->xBlockSize - xWantedSize;
@@ -216,7 +279,7 @@ void *RAM_Malloc ( size_t xWantedSize )
 
     traceMALLOC ( pvReturn, xWantedSize );
     }
-  (void)xTaskResumeAll();
+  ramTaskResumeAll();
 
 #if( configUSE_MALLOC_FAILED_HOOK == 1 )
     {
@@ -234,7 +297,7 @@ void *RAM_Malloc ( size_t xWantedSize )
 
   DEV_ASSERT( (nullptr == pvReturn), GFC_OutOfMem );
 
-  configASSERT ((((size_t)pvReturn ) & (size_t)portBYTE_ALIGNMENT_MASK ) == 0 );
+  ramheapASSERT ((((size_t)pvReturn ) & (size_t)ramBYTE_ALIGNMENT_MASK ) == 0 );
 
   return pvReturn;
 }
@@ -256,8 +319,8 @@ void RAM_Free ( void *pv )
     pxLink = (RAMBlockLink_t*)puc;
 
     /* Check the block is actually allocated. */
-    configASSERT ( ( pxLink->xBlockSize & xRAMBlockAllocatedBit ) != 0 );
-    configASSERT ( pxLink->pxNextFreeBlock == nullptr );
+    ramheapASSERT ( ( pxLink->xBlockSize & xRAMBlockAllocatedBit ) != 0 );
+    ramheapASSERT ( pxLink->pxNextFreeBlock == nullptr );
 
     if( ( pxLink->xBlockSize & xRAMBlockAllocatedBit ) != 0 )
       {
@@ -266,7 +329,7 @@ void RAM_Free ( void *pv )
         /* The block is being returned to the heap - it is no longer allocated. */
         pxLink->xBlockSize &= ~xRAMBlockAllocatedBit;
 
-        vTaskSuspendAll();
+        ramTaskSuspendAll();
           {
           /* Add this block to the list of free blocks. */
           xRAMFreeBytesRemaining += pxLink->xBlockSize;
@@ -274,7 +337,7 @@ void RAM_Free ( void *pv )
           RAM_InsertBlockIntoFreeList ( ( (RAMBlockLink_t*)pxLink ) );
           xRAMNumberOfSuccessfulFrees++;
           }
-        (void)xTaskResumeAll();
+          ramTaskResumeAll();
         }
       else
         {
@@ -320,10 +383,10 @@ void RAM_Init ( void )
   /* Ensure the heap starts on a correctly aligned boundary. */
   uxAddress = (size_t)ucRAMHeap;
 
-  if( ( uxAddress & portBYTE_ALIGNMENT_MASK ) != 0 )
+  if( ( uxAddress & ramBYTE_ALIGNMENT_MASK ) != 0 )
     {
-    uxAddress +=  ( portBYTE_ALIGNMENT - 1 );
-    uxAddress &= ~( (size_t)portBYTE_ALIGNMENT_MASK );
+    uxAddress +=  ( ramBYTE_ALIGNMENT - 1 );
+    uxAddress &= ~( (size_t)ramBYTE_ALIGNMENT_MASK );
     xTotalHeapSize -= uxAddress - (size_t)ucRAMHeap;
     }
 
@@ -338,7 +401,7 @@ void RAM_Init ( void )
     at the end of the heap space. */
   uxAddress  = ( (size_t)pucAlignedHeap ) + xTotalHeapSize;
   uxAddress -= xHeapStructSize;
-  uxAddress &= ~( (size_t)portBYTE_ALIGNMENT_MASK );
+  uxAddress &= ~( (size_t)ramBYTE_ALIGNMENT_MASK );
   RAM_pblEnd = (RAMBlockLink_t*)uxAddress;
   RAM_pblEnd->xBlockSize = 0;
   RAM_pblEnd->pxNextFreeBlock = nullptr;
@@ -419,7 +482,7 @@ static void RAM_InsertBlockIntoFreeList ( RAMBlockLink_t *pxBlockToInsert )
     }
 }
 //-----------------------------------------------------------------------------
-void RAM_GetHeapStats ( HeapStats_t *pxHeapStats )
+void RAM_GetHeapStats(ramHeapStats_t* pxHeapStats)
 {
   
   if( RAM_pblEnd == nullptr )
@@ -428,10 +491,10 @@ void RAM_GetHeapStats ( HeapStats_t *pxHeapStats )
     }
   
   RAMBlockLink_t *pxBlock;
-  /* portMAX_DELAY used as a portable way of getting the maximum value. */
-  size_t xBlocks = 0, xMaxSize = 0, xMinSize = portMAX_DELAY;
+  /* ramMAX_DELAY used as a portable way of getting the maximum value. */
+  size_t xBlocks = 0, xMaxSize = 0, xMinSize = ramMAX_DELAY;
 
-  vTaskSuspendAll();
+  ramTaskSuspendAll();
     {
     pxBlock = xStart.pxNextFreeBlock;
 
@@ -461,19 +524,19 @@ void RAM_GetHeapStats ( HeapStats_t *pxHeapStats )
       while ( pxBlock != RAM_pblEnd );
       }
     }
-  xTaskResumeAll();
+  ramTaskResumeAll();
 
   pxHeapStats->xSizeOfLargestFreeBlockInBytes  = xMaxSize;
   pxHeapStats->xSizeOfSmallestFreeBlockInBytes = xMinSize;
   pxHeapStats->xNumberOfFreeBlocks             = xBlocks;
 
-  taskENTER_CRITICAL();
+  ramENTER_CRITICAL();
     {
     pxHeapStats->xAvailableHeapSpaceInBytes     = xRAMFreeBytesRemaining;
     pxHeapStats->xNumberOfSuccessfulAllocations = xRAMNumberOfSuccessfulAllocations;
     pxHeapStats->xNumberOfSuccessfulFrees       = xRAMNumberOfSuccessfulFrees;
     pxHeapStats->xMinimumEverFreeBytesRemaining = xRAMMinimumEverFreeBytesRemaining;
     }
-  taskEXIT_CRITICAL();
+  ramEXIT_CRITICAL();
 }
 //-----------------------------------------------------------------------------

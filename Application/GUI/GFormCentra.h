@@ -187,11 +187,15 @@ bool IsFormOnStack(FormId id);
 void SendMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);
 
 /// Send a message with a pointer payload to the current form.
-void SendMsgPtr(uint16_t msgId, uint16_t param, const void* data);
+void SendMsgPtr(uint16_t msgId, uint16_t param, const void* data = nullptr);
 
 /// Post a message for deferred delivery on the next Tick() call.
 /// Safe to call from interrupt / non-GUI thread context.
 void PostMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);
+
+/// Post a message for deferred delivery on the next Tick() call.
+/// Safe to call from interrupt / non-GUI thread context.
+void PostMsgPtr(uint16_t msgId, uint16_t param = 0, const void* data = nullptr);
 
 /// Broadcast a message to ALL forms currently on the stack (bottom to top).
 void BroadcastMsg(uint16_t msgId, uint16_t param = 0, int32_t value = 0);

@@ -14,6 +14,7 @@
 
 #include "DevRegs.h"
 #include "DevRegInfo.h"
+#include "DevTypes.h"
 
 #include "Strings\TextStrs.h"
 
@@ -35,12 +36,12 @@
 //-----------------------------------------------------------------------------
 // 保护数据
 //-----------------------------------------------------------------------------
-#define RIP_FREQDISP   0, 0, 45,       55,        1,  1, 5, 2
-#define RIP_VOLTDISP   0, 0, MIN_Volt, MAX_Volt,  1,  1, 6, 2
-#define RIP_CURRDISP   0, 0, 0,        100,       1,  1, 6, 2
-#define RIP_POWRDISP   0, 0, 0,       1000,       1,  1, 6, 1
-#define RIP_TEMPDISP   0, 0, -50,     50,         1, 1,  5, 1
-#define RIP_PERCDISP   0, 0, 0,       100,        1, 1,  5, 1
+#define RIP_FREQDISP   0, 0,  45,       55,       1, 1, 5, 2
+#define RIP_VOLTDISP   0, 0, MIN_Volt, MAX_Volt,  1, 1, 6, 2
+#define RIP_CURRDISP   0, 0,   0,      100,       1, 1, 6, 2
+#define RIP_POWRDISP   0, 0,   0,     1000,       1, 1, 6, 1
+#define RIP_TEMPDISP   0, 0, -50,       50,       1, 1, 5, 1
+#define RIP_PERCDISP   0, 0,   0,      100,       1, 1, 5, 1
 
 static constexpr TDevRegInfoItem pProtDataRegInfos[] =
 {
@@ -296,8 +297,8 @@ static constexpr TDevRegInfoItem pDevFunctionRegInfos[] =
   ,{ idDevCfgName13,  0,   REG_FN_PWRON_TIME,       0,       10,     1,   120,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Min  }
   ,{ idDevCfgName14,  0,   REG_FN_PWROFF_TIME,      0,       10,     1,   120,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Min  }
   ,{ idDevCfgName15,  0,   REG_FN_SHUTDOWN_TIME,    0,        1,     1,   120,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Sec  }
-  ,{ idDevCfgName16,  0,   REG_FN_RELAY_DELAY,      0,        5,     5, 24000,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Sec  }
-  ,{ idDevCfgName17,  0,   REG_FN_RELAY_TIME,       0,        2,     5, 24000,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Sec  }
+  ,{ idDevCfgName16,  0,   REG_FN_RELAY_DELAY,      0,        5,     5,  5000,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Sec  }
+  ,{ idDevCfgName17,  0,   REG_FN_RELAY_TIME,       0,        2,     5,  5000,     1,  1,    3,   0,  0,  0,  SIT_DevConfig | SIT_VAT_INT | SIT_DIM_Sec  }
 
 //  ,{ idDateTimeName01,   0,  REG_FN_DATETIME,       0,        0,    0,    0,      0,   0,    4,   0,  0,  0,  STI_Type_Time }
 //  ,{ idDateTimeName02,   0,  REG_DATE_YEAR,         0,     2025,  2010,   2100,   1,   1,    4,   0,  0,  0,  STI_Type_Time }

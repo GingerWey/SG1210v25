@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : GUICntr.h
  Version     : V1.10
@@ -103,27 +103,6 @@ void GUIKeyEnevt(uint32_t uKey, uint32_t uPressedCnt);
 // Window Identifiers
 #define  WID_CONSOLE         1
 
-#define  WID_FORMBEGIN       100
-#define  WID_SplashForm      (WID_FORMBEGIN + 0)
-#define  WID_MenuForm        (WID_FORMBEGIN + 1)
-#define  WID_MainForm        (WID_FORMBEGIN + 2)
-#define  WID_EventListForm   (WID_FORMBEGIN + 3)
-#define  WID_CTRLConfigForm  (WID_FORMBEGIN + 4)
-#define  WID_UARTConfigForm  (WID_FORMBEGIN + 5)
-#define  WID_DevInfoForm     (WID_FORMBEGIN + 6)
-#define  WID_MessageForm     (WID_FORMBEGIN + 7)
-#define  WID_ConfigForm      (WID_FORMBEGIN + 8)
-#define  WID_GuageForm       (WID_FORMBEGIN + 9)
-#define  WID_LoginDialog     (WID_FORMBEGIN + 11)
-#define  WID_TimeDialog      (WID_FORMBEGIN + 12)
-#define  WID_WLGListForm     (WID_FORMBEGIN + 13)
-#define  WID_WLGViewForm     (WID_FORMBEGIN + 14)
-#define  WID_DataListForm   (WID_FORMBEGIN + 15)
-#define  WID_SystemLogForm  (WID_FORMBEGIN + 16)
-#define  WID_DeviceTestForm (WID_FORMBEGIN + 17)
-#define  WID_EthernetConfigForm (WID_FORMBEGIN + 18)
-#define  WID_AboutForm      (WID_FORMBEGIN + 19)
-#define  WID_LogListForm    (WID_FORMBEGIN + 20)
 //-----------------------------------------------------------------------------
 // �������ڷ���Ϣ
 void GUISendMessage( uint32_t uMsgIdent, uint32_t uParam, uint32_t uData );

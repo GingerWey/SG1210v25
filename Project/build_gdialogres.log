@@ -1,0 +1,7 @@
+*** Using Compiler 'V6.22', folder: 'D:\Apps\Keil\ARM\ARMCLANG\Bin'
+Build target 'APP'
+compiling GDialogRes.cpp...
+linking...
+Program Size: Code=186312 RO-data=240592 RW-data=768 ZI-data=189128  
+".\Objects\SG1210_H21v2.33.2532" - 0 Error(s), 0 Warning(s).
+Build Time Elapsed:  00:00:04

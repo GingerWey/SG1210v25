@@ -27,6 +27,7 @@
 #include "GUIMessage.h"
 #include "GUI.h"
 #include "RamHeap.h"
+#include "DevDebug.h"
 
 #include <cstring>
 #include <new>
@@ -70,10 +71,11 @@ size_t     s_msgTail = 0;
 
 // ── Platform mutex (lazy init — avoids static init order crash) ──────
 static gfc::platform::Lock* s_plock = nullptr;
-static gfc::platform::Lock& GetLock() {
-    if (!s_plock) {
+static gfc::platform::Lock& GetLock() 
+{
+    if (nullptr == s_plock) {
         s_plock = static_cast<gfc::platform::Lock*>(RAM_Malloc(sizeof(gfc::platform::Lock)));
-        if (s_plock) {
+        if (nullptr != s_plock) {
             new (s_plock) gfc::platform::Lock();  // placement new
         }
     }
@@ -114,10 +116,9 @@ int FindRegIdxByForm(const GWinForm* form)
 /// Called with lock held.
 void NotifyForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
 {
-    if (nullptr == rec || nullptr == rec->callbacks ||
-        nullptr == rec->callbacks->pMsg) {
-        return;
-    }
+    DEV_ASSERT (nullptr == rec || nullptr == rec->callbacks ||
+        nullptr == rec->callbacks->pMsg, GFC_EmptyPtr);
+
     GM_MESSAGE msg = {};
     msg.MsgId = msgId;
     msg.Param = param;
@@ -129,10 +130,9 @@ void NotifyForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
 /// Called with lock held.
 bool QueryForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
 {
-    if (nullptr == rec || nullptr == rec->callbacks ||
-        nullptr == rec->callbacks->pMsg) {
-        return false;
-    }
+    DEV_ASSERT(nullptr == rec || nullptr == rec->callbacks ||
+               nullptr == rec->callbacks->pMsg, GFC_EmptyPtr);
+
     GM_MESSAGE msg = {};
     msg.MsgId = msgId;
     msg.Param = param;
@@ -145,8 +145,9 @@ bool QueryForm(const gfc::FormRecord* rec, uint16_t msgId, uint16_t param = 0)
 bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
                   const void* para)
 {
-    if (kFormIdInvalid == id || nullptr == rec || nullptr == rec->callbacks)
-        return false;
+    DEV_ASSERT(kFormIdInvalid == id || nullptr == rec || 
+               nullptr == rec->callbacks, GFC_EmptyPtr);
+
     if (s_stackTop >= gfc::kMaxStack)
         return false;
 
@@ -174,10 +175,9 @@ bool ActivateForm(gfc::FormId id, const gfc::FormRecord* rec,
 /// Called with lock held.
 void DeactivateCurrent(const void* para)
 {
-    if (0 == s_stackTop) {
-        return;
-    }
 
+    DEV_ASSERT( (0 == s_stackTop), GFC_SystemErr );
+ 
     if (nullptr != s_pCurrent && nullptr != s_pCurrent->callbacks) {
         if (nullptr != s_pCurrent->callbacks->pClose) {
             s_pCurrent->callbacks->pClose(para);
@@ -208,17 +208,18 @@ void DeactivateCurrent(const void* para)
 /// Called with lock held.
 void ShowTop(const void* para)
 {
-    if (0 < s_stackTop) {
-        gfc::FormId topId = s_stack[s_stackTop - 1];
-        int idx = FindRegIdx(topId);
-        if (0 <= idx) {
-            s_pCurrent  = &s_registry[idx].record;
-            s_currentId = topId;
-            if (nullptr != s_pCurrent->callbacks->pShow) {
-                s_pCurrent->callbacks->pShow(para);
-            }
+    DEV_ASSERT( (0 == s_stackTop), GFC_SystemErr );
+ 
+    gfc::FormId topId = s_stack[s_stackTop - 1];
+    int idx = FindRegIdx(topId);
+    if (0 <= idx) {
+        s_pCurrent  = &s_registry[idx].record;
+        s_currentId = topId;
+        if (nullptr != s_pCurrent->callbacks->pShow) {
+            s_pCurrent->callbacks->pShow(para);
         }
     }
+
 }
 
 }  // anonymous namespace
@@ -313,9 +314,8 @@ size_t gfc::Run()
 
 void gfc::RegisterForm(FormId id, const GWinForm* form, const char* name)
 {
-    if (nullptr == form) {
-        return;
-    }
+
+    DEV_ASSERT((nullptr == form), GFC_EmptyPtr);
 
     gfc::ScopedLock _(GetLock());
 
@@ -572,7 +572,10 @@ bool gfc::IsStackEmpty()
 
 gfc::FormId gfc::GetStackForm(size_t depth)
 {
-    if (depth >= s_stackTop) return kFormIdInvalid;
+    if (depth >= s_stackTop) {
+        return kFormIdInvalid;
+    }
+
     // depth 0 = top = s_stack[s_stackTop - 1]
     return s_stack[s_stackTop - 1 - depth];
 }
@@ -580,7 +583,9 @@ gfc::FormId gfc::GetStackForm(size_t depth)
 bool gfc::IsFormOnStack(FormId id)
 {
     for (size_t iIdx = 0; iIdx < s_stackTop; ++iIdx) {
-        if (s_stack[iIdx] == id) return true;
+        if (s_stack[iIdx] == id) {
+            return true;
+        }
     }
     return false;
 }
@@ -634,12 +639,32 @@ void gfc::PostMsg(uint16_t msgId, uint16_t param, int32_t value)
     gfc::ScopedLock _(GetLock());
 
     size_t next = (s_msgTail + 1) % kMsgQueueSize;
-    if (next == s_msgHead) return;  // Queue full, drop
+    if (next == s_msgHead) {
+        return;  // Queue full, drop
+    }   
 
     s_msgQueue[s_msgTail].msgId = msgId;
     s_msgQueue[s_msgTail].param = param;
     s_msgQueue[s_msgTail].value = value;
     s_msgQueue[s_msgTail].data  = nullptr;
+    s_msgTail = next;
+}
+
+/// Post a message for deferred delivery on the next Tick() call.
+/// Safe to call from interrupt / non-GUI thread context.
+void gfc::PostMsgPtr(uint16_t msgId, uint16_t param, const void *data)
+{
+    gfc::ScopedLock _(GetLock());
+
+    size_t next = (s_msgTail + 1) % kMsgQueueSize;
+    if (next == s_msgHead) {
+        return;  // Queue full, drop
+    }
+
+    s_msgQueue[s_msgTail].msgId = msgId;
+    s_msgQueue[s_msgTail].param = param;
+    s_msgQueue[s_msgTail].value = 0;
+    s_msgQueue[s_msgTail].data  = const_cast<void*>(data);
     s_msgTail = next;
 }
 

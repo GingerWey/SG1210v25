@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
   GUI Message System
 
@@ -23,46 +23,38 @@ extern "C" {
 #define GM_PAINT                      1     // Repaint window (because content is (partially) invalid 
 #define GM_CREATE                     2     // The first message received, right after client has actually been created 
 #define GM_CLOSE                      3     // Close top window. 
-#define GM_SHOWAIT                    4     // Show wait window. 
-#define GM_CANCELWAIT                 5     // Cancel wait window. 
-#define GM_MAINMENU                   6     // Create and show mainmenu 
+#define GM_CLOSE_QUERY                4     // Query before form will be closed
+#define GM_SHOWAIT                    5     // Show wait window. 
+#define GM_CANCELWAIT                 6     // Cancel wait window. 
 #define GM_MOVE                       7     // window has been moved 
 #define GM_SHOW                       8     // windows has just received the show command 
 #define GM_HIDE                       9     // windows has just received the hide command 
 #define GM_FGND                      10     // window has been made top of window stack 
 #define GM_BGND                      11     // window has just been put to bottom of stack 
-#define GM_TOUCH                     12     // touch screen message
-
-// Touch event sub-types (in Param field of GM_TOUCH)
-#define TOUCH_UP                     0      // Pen/finger released
-#define TOUCH_DOWN                   1      // Pen/finger pressed
-#define TOUCH_MOVE                   2      // Pen/finger moved while pressed
-// Coordinate encoding in Data.v: (uint16_t x << 16) | (uint16_t y)
-#define GM_KEYDOWN                   13     // Key has been pressed 
-#define GM_KEYPRESS                  14     // Key has been pressed and hold
-#define GM_KEYUP                     15     // Key has been released 
-#define GM_TIMER_TICK                16     // Timer tick 
-#define GM_ISEDITING                 20     // In Editting 
-#define GM_CANCELEDIT                21     // Cancel editting 
-#define GM_IDLE_EXPIRE               22     // Idle expire query. if Form want prevents closing when idle expire, 
+#define GM_TIMER_TICK                15     // Timer tick 
+#define GM_IDLE_EXPIRE               16     // Idle expire query. if Form want prevents closing when idle expire, 
                                             // then it should fill Message.Data.v with number greater than zero. 
-#define GM_FORM_ACTIVATED            18     // Form has been activated (became top of stack)
-#define GM_FORM_DEACTIVATED          19     // Form has been deactivated (pushed down or closed)
+#define GM_FORM_ACTIVATED            17     // Form has been activated (became top of stack)
+#define GM_FORM_DEACTIVATED          18     // Form has been deactivated (pushed down or closed)
 
-#define GM_SHOW_MSGDLG               23     // Show Message dialog, Param= Icon, Data.v = String
-#define GM_SHOW_INFDLG               24     // Show Message dialog, Param= Type, Data.v = HWND
+#define GM_TOUCH                     30     // touch screen message
+// Touch event sub-types (in Param field of GM_TOUCH)
+#define TOUCH_UP                     31     // Pen/finger released
+#define TOUCH_DOWN                   32     // Pen/finger pressed
+#define TOUCH_MOVE                   33     // Pen/finger moved while pressed
+// Coordinate encoding in Data.v: (uint16_t x << 16) | (uint16_t y)
+#define GM_KEYDOWN                   40     // Key has been pressed 
+#define GM_KEYPRESS                  41     // Key has been pressed and hold
+#define GM_KEYUP                     42     // Key has been released 
 
-#define GM_SET_TICK                  25     // Set Window close Tick, Msg.Param = Tick 
-#define GM_SET_TEXT                  26     // Set Text for Component, eg. TGUIMemoLabel 
-#define GM_SET_IMAGE_INDEX           28     // Set Image index for TGUIImageList, Msg.Param = index 
+#define GM_SET_TICK                  55     // Set Window close Tick, Msg.Param = Tick 
+#define GM_SET_TEXT                  56     // Set Text for Component, eg. TGUIMemoLabel 
+#define GM_SET_IMAGE_INDEX           58     // Set Image index for TGUIImageList, Msg.Param = index 
 
-#define GM_HAS_FATALEVENT            30     // SFC has fatal event 
-#define GM_HAS_ALARMEVENT            31     // SFC has alarm event 
+#define GM_NOTIFY_CHILD_HAS_FOCUS    60
+#define GM_NOTIFY_PARENT             61     // Notify to parent
 
-#define GM_LISTITEMS_CHANGED         40     // List items changed 
-
-#define GM_NEXT_PAGE                 50     // Next page
-#define GM_PERIOR_PAGE               51     // Previous page
+#define GM_LISTITEMS_CHANGED         70     // List items changed 
 
 #define GM_GET_CLIENT_RECT          100     // get client rectangle in window coordinates*/
 #define GM_GET_INSIDE_RECT          102     // get inside rectangle: client rectangle minus pixels lost to effect
@@ -82,21 +74,20 @@ extern "C" {
 #define GM_GET_SCROLL               117     // Get scroll status ... only effective for scrollbars
 #define GM_SET_SCROLL               118     // Set scroll status ... only effective for scrollbars
 
-#define GM_SET_EDITSTATE            119     // Set edit state       
-#define GM_EDITOR_ACCEPT            120     // Editor are accept.   
-#define GM_EDITOR_CANCEL            121     // Editor are cancelled.
+#define GM_NEXT_PAGE                120     // Next page
+#define GM_PERIOR_PAGE              121     // Previous page    
 
-#define GM_NOTIFY_CHILD_HAS_FOCUS   125
-#define GM_NOTIFY_PARENT            126     // Notify to parent
+#define GM_SHOW_MSGDLG              122     // Show Message dialog, Param= Icon, Data.v = String
+#define GM_SHOW_INFDLG              123     // Show Message dialog, Param= Type, Data.v = HWND
 
-#define GM_CLOSE_QUERY              130     // Query before form will be closed
-
-#define GM_SETTING_ENABLE           200     // Enable  setting 
-#define GM_SETTING_DISABLE          201     // Disable setting 
-#define GM_DEVICE_COMFIRM           202     // Device set Comfirm setting 
-#define GM_DEVICE_CANCEL            203     // Device set Cancel  setting 
-#define GM_SETTING_COMFIRM          204     // Comfirm setting 
-#define GM_SETTING_CANCEL           205     // Cancel  setting 
+#define GM_SET_EDITSTATE            130     // Set edit state       
+#define GM_DIALOG_ACCEPT            131     // Dialog are accept.   
+#define GM_DIALOG_CANCEL            132     // Dialog are cancelled.
+#define GM_DIALOG_YES               133     // Dialog returns Yes.   
+#define GM_DIALOG_NO                134     // Dialog returns No.
+#define GM_DIALOG_OK                135     // Dialog returns Ok.
+#define GM_ISEDITING                136     // In Editting 
+#define GM_CANCELEDIT               137     // Cancel editting 
 
 #define GM_TIMERECV                 220
 #define GM_DATARECV                 221

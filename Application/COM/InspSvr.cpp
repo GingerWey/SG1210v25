@@ -470,17 +470,23 @@ void TInspectorServer::Send_ISP_DEVRTRES(void)
   uint32_t* puInfo = (uint32_t*)&m_pucTxBuf[5];
 
 #if osCMSIS >= 0x20000U
+  {
   HeapStats_t HeapStats;
   vPortGetHeapStats( &HeapStats );
   
   puInfo[ 0] = HeapStats.xAvailableHeapSpaceInBytes;
   puInfo[ 1] = HeapStats.xMinimumEverFreeBytesRemaining;
-
+  }
+  
+  {
+  ramHeapStats_t HeapStats;
   RAM_GetHeapStats( &HeapStats );
   puInfo[ 2] = HeapStats.xAvailableHeapSpaceInBytes;     //RAM_stFreeBytesRemaining;
   puInfo[ 3] = HeapStats.xMinimumEverFreeBytesRemaining; //RAM_stMinimumEverFreeBytesRemaining;
   puInfo[ 4] = HeapStats.xNumberOfSuccessfulFrees;       //RAM_GetFreeHeapSize();
   puInfo[ 5] = HeapStats.xMinimumEverFreeBytesRemaining; //RAM_MinimumEverFreeHeapSize();
+  }
+  
 #else
   puInfo[ 0] = xCCMFreeBytesRemaining;
   puInfo[ 1] = xCCMMinimumEverFreeBytesRemaining;

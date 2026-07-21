@@ -13,7 +13,6 @@
 #include "DevIntf.h"
 
 #include "DevBuffer.h"
-#include "DevDebug.h"
 #include "DevEvtMgr.h"
 #include "DevFixed.h"
 #include "DevFunc.h"
@@ -27,9 +26,6 @@
 
 //#include "Relay.h"
 #ifdef __vmSIMULATOR__
-  //#include <time.h>
-  //#include "dioSim.h"
-  //#include "GUIAppPort.h"
    #include <Windows.h>
  #ifdef __QT__
    #include "qdatetime.h"
@@ -44,6 +40,7 @@
 #endif
 
 #include <string.h>
+#include <cstdint>
 //=============================================================================
 // 本地宏
 //-----------------------------------------------------------------------------
@@ -613,7 +610,7 @@ void DevIntf_ServiceCancel(void)
   if( GetEditState( REM_CALIB_MODIFIED ) )
     {
     // 恢复备份数据
-    memcpy(&DevConfig, &DevCfgForEdit, sizeof(DevCfgForEdit));
+    memcpy(&DevCfgForEdit, &DevConfig, sizeof(DevCfgForEdit));
 
     ClrEditState( REM_CALIB_MODIFIED );
     }
@@ -885,6 +882,40 @@ uint32_t DevIntf_DevCfgLoadDefault(uint32_t uToken)
 // 时间访问
 //-----------------------------------------------------------------------------
 // 读取系统时间
+// 从系统中读取读取当前时间
+// 输入：(无)
+// 输出：
+//   pDateTime: 指向存贮当前时间的结构指针
+// 返回：(无)
+void DevIntf_getDateTime(TDateTimeType *pDateTime)
+{
+
+#ifdef USE_DEV_ASSERT
+   DEV_ASSERT( nullptr == pDateTime, GFC_ErrParam );
+#endif
+
+
+#ifndef __vmSIMULATOR__
+   RTC_GetTime(pDateTime);
+#else
+    SYSTEMTIME stLocal;
+
+    // 获取本地时间
+    GetLocalTime(&stLocal);
+    //// 获取 UTC 时间
+    //GetSystemTime(&stUTC);
+
+    pDateTime->Year    = stLocal.wYear;
+    pDateTime->Month   = stLocal.wMonth;
+    pDateTime->Day     = stLocal.wDay;
+    pDateTime->Hours   = stLocal.wHour;
+    pDateTime->Minutes = stLocal.wMinute;
+    pDateTime->Seconds = stLocal.wSecond;
+    pDateTime->MilSeconds = stLocal.wMilliseconds;
+#endif
+}
+//-----------------------------------------------------------------------------
+// 读取系统时间
 // 由vGUI调用
 // 从SFC中读取读取当前时间
 // 输入：(无)
@@ -926,7 +957,6 @@ void DevIntf_ReadDateTime(uint16_t *puwTime)
     puwTime[5] = stLocal.wSecond;
     puwTime[6] = stLocal.wMilliseconds;
 #endif
-
 }
 //-----------------------------------------------------------------------------
 // 设置系统时间

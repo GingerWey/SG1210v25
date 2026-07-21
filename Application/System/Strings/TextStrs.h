@@ -544,11 +544,11 @@ extern "C" {
 #define idUartParity1           0x2A99 //
 #define idUartParity2           0x2A9A //
 // 速率									        
-#define idUartBaud01            0x2AA0 //
-#define idUartBaud02            0x2AA1 //
-#define idUartBaud03            0x2AA2 //
-#define idUartBaud04            0x2AA3 //
-#define idUartBaud05            0x2AA4 //
+#define idUartBaud1200          0x2AA0 //
+#define idUartBaud2400          0x2AA1 //
+#define idUartBaud4800          0x2AA2 //
+#define idUartBaud9600          0x2AA3 //
+#define idUartBaud19200         0x2AA4 //
 										            
 #define idUartUnit01            0x2AA6 //
 #define idUartUnit02            0x2AA7 //

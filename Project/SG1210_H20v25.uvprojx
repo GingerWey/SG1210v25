@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F407xx,__TARGET_FPU_VFP,__FPU_PRESENT=1U,ARM_MATH_CM4,__DEBUG</Define>
               <Undefine></Undefine>
-              <IncludePath>..\Application;..\Application\Config;..\Application\COM;..\Application\Device;..\Application\GUI;..\Application\Mics;..\Application\System;..\Application\Tasks;..\Drivers\Cube\inc;..\Drivers\CMSIS\Include;..\Drivers\HAL_Driver\Inc;..\Drivers\HAL_Driver\Inc\Legacy;..\Drivers\Peripherals;..\Middlewares\emWin\include;..\Middlewares\emWin\user;..\Middlewares\emWin\fonts;..\Middlewares\FreeRTOS;..\Middlewares\FreeRTOS\CMSIS_RTOS_V2;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable\ARM_CM4F_GCC;..\Middlewares\emWin\csgimage;..\Middlewares\emWin\csgimage\Compress;..\Application\GUI\Graphics</IncludePath>
+              <IncludePath>..\Application;..\Application\Config;..\Application\COM;..\Application\Device;..\Application\GUI;..\Application\Mics;..\Application\System;..\Application\Tasks;..\Drivers\Cube\inc;..\Drivers\CMSIS\Include;..\Drivers\HAL_Driver\Inc;..\Drivers\HAL_Driver\Inc\Legacy;..\Drivers\Peripherals;..\Middlewares\emWin\include;..\Middlewares\emWin\user;..\Middlewares\emWin\fonts;..\Middlewares\FreeRTOS;..\Middlewares\FreeRTOS\CMSIS_RTOS_V2;..\Middlewares\FreeRTOS\include;..\Middlewares\FreeRTOS\portable\ARM_CM4F_GCC;..\Middlewares\emWin\csgimage;..\Middlewares\emWin\csgimage\Compress;..\Application\GUI\Graphics;..\Application\GUI\Form;..\Application\GUI\Dialog</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -921,11 +921,6 @@
               <FilePath>..\Application\GUI\GFormCentra.cpp</FilePath>
             </File>
             <File>
-              <FileName>GUIEditors.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GUIEditors.cpp</FilePath>
-            </File>
-            <File>
               <FileName>GUIBitmap.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Middlewares\emWin\user\GUIBitmap.h</FilePath>
@@ -956,39 +951,19 @@
           <GroupName>GUI/Form</GroupName>
           <Files>
             <File>
-              <FileName>GSplashForm.cpp</FileName>
+              <FileName>GConfigForm.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GSplashForm.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>GMainForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GMainForm.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>GMenuForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GMenuForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Form\GConfigForm.cpp</FilePath>
             </File>
             <File>
               <FileName>GDataListForm.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GDataListForm.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>GLogListForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GLogListForm.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>GConfigForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GConfigForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Form\GDataListForm.cpp</FilePath>
             </File>
             <File>
               <FileName>GDevInfoForm.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GDevInfoForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Form\GDevInfoForm.cpp</FilePath>
               <FileOption>
                 <CommonProperty>
                   <UseCPPCompiler>2</UseCPPCompiler>
@@ -1042,39 +1017,89 @@
               </FileOption>
             </File>
             <File>
-              <FileName>GGuageForm.cpp</FileName>
+              <FileName>GFatalForm.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GGuageForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Form\GFatalForm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GLogListForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Form\GLogListForm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GMainForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Form\GMainForm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GMenuForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Form\GMenuForm.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GSplashForm.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Form\GSplashForm.cpp</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>GUI/Dialog</GroupName>
+          <Files>
+            <File>
+              <FileName>GWidget.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GWidget.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GLabel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GLabel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GKeyboard.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GKeyboard.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GEditorPanel.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GEditorPanel.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GDialog.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GDialog.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>GNumRegDialog.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Application\GUI\Dialog\GNumRegDialog.cpp</FilePath>
             </File>
             <File>
               <FileName>GLoginDialog.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GLoginDialog.cpp</FilePath>
+              <FilePath>..\Application\GUI\Dialog\GLoginDialog.cpp</FilePath>
             </File>
             <File>
-              <FileName>GTimeDialog.cpp</FileName>
+              <FileName>GIPAddressDialog.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GTimeDialog.cpp</FilePath>
+              <FilePath>..\Application\GUI\Dialog\GIPAddressDialog.cpp</FilePath>
             </File>
             <File>
-              <FileName>GMessageForm.cpp</FileName>
+              <FileName>GDatetimeDialog.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GMessageForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Dialog\GDatetimeDialog.cpp</FilePath>
             </File>
             <File>
-              <FileName>GUICtrlConfigDialog.cpp</FileName>
+              <FileName>GDialogRes.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GUICtrlConfigDialog.cpp</FilePath>
+              <FilePath>..\Application\GUI\Dialog\GDialogRes.cpp</FilePath>
             </File>
             <File>
-              <FileName>GUIUARTConfigDialog.cpp</FileName>
+              <FileName>GListbox.cpp</FileName>
               <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GUIUARTConfigDialog.cpp</FilePath>
-            </File>
-            <File>
-              <FileName>GFatalForm.cpp</FileName>
-              <FileType>8</FileType>
-              <FilePath>..\Application\GUI\GFatalForm.cpp</FilePath>
+              <FilePath>..\Application\GUI\Dialog\GListbox.cpp</FilePath>
             </File>
           </Files>
         </Group>

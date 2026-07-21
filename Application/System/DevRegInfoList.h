@@ -14,6 +14,7 @@
 #define DEV_REGINFOLIST_H
 
 #include "DevTypes.h"
+#include "DevRegInfo.h"
 //-----------------------------------------------------------------------------
 #ifdef __cplusplus
 extern "C" {

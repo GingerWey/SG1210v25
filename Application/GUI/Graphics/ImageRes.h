@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 /*
    ImageRes.h
    CSG image data
@@ -27,8 +27,8 @@ extern const TGUIPicture picbkg320x240csg;
 #define IMAGE_BACKGROUND  &picbkg320x240csg
 //===============================================================
 /*
-CSG atlas: picMAUAtlascsg
-   No. Image                      resolution     size  CRM       CRN  CAS          Size   ratio
+CSG atlas: picWINAtlascsg
+   No. Image                      resolution     size  CRM       CRN  CAS          Size   ratio  
  ------------------------------------------------------------------------------------------------
    1.  MA_Logo78x18Green.png         78x18       2134  RGB565     8  None           560   26.24%
    2.  MA_Logo80x20Cyan.png          90x20       2189  RGB565     8  None           708   32.34%
@@ -63,8 +63,8 @@ CSG atlas: picMAUAtlascsg
   31.  DL_GroupE20x16Cyan.png        20x16        386  RGB565     4  MiniLZ77        88   22.80%
   32.  LV_CheckMark16x16Red.png      16x16        494  RGB565     8  RLE            116   23.48%
   33.  LV_CrossMark16x16Green.png    16x16        980  RGB565     8  None           128   13.06%
-  34.  LV_SwitchON32x16Cyan.png      32x14       1050  RGB565     4  None           136   12.95%
-  35.  LV_SwitchOFF32x16Red.png      32x14       1107  RGB565     4  None           136   12.29%
+  34.  LV_SwitchON32x16Red.png       32x14        724  RGB565     4  None           136   18.78%
+  35.  LV_SwitchOFF32x16Cyan.png     32x14       1050  RGB565     4  None           136   12.95%
   36.  LV_LogA20x20Cyan.png          20x20        922  RGB565     4  None           124   13.45%
   37.  LV_LogB20x20Cyan.png          20x20        712  RGB565     4  None           124   17.42%
   38.  LV_LogC20x20Cyan.png          20x20        873  RGB565     4  None           124   14.20%
@@ -74,13 +74,13 @@ CSG atlas: picMAUAtlascsg
   42.  CF_Serial16x16Cyan.png        16x16       1138  RGB565     4  None            88    7.73%
   43.  CF_Ethernet16x16Cyan.png      16x16        618  RGB565     4  None            88   14.24%
  ------------------------------------------------------------------------------------------------
-   Total                                        65079                             10420   16.01%
+   Total                                        64696                             10420   16.11%
 */
-// CSG Atlas: MAUAtlas object
-extern const TGUIPicture picMAUAtlascsg;
-#define CSG_MAUATLAS (&picMAUAtlascsg)
+// CSG Atlas: WINAtlas object
+extern const TGUIPicture picWINAtlascsg;
+#define CSG_WINATLAS   (&picWINAtlascsg)
 
-// CSG Atlas: MAUAtlas picture index constants
+// CSG Atlas: WINAtlas picture index constants
 constexpr int picIdxMA_Logo78x18Green      = 0;
 constexpr int picIdxMA_Logo80x20Cyan       = 1;
 constexpr int picIdxMA_ACPow32x59Cyan      = 2;
@@ -114,8 +114,8 @@ constexpr int picIdxDL_GroupD20x16Cyan     = 29;
 constexpr int picIdxDL_GroupE20x16Cyan     = 30;
 constexpr int picIdxLV_CheckMark16x16Red   = 31;
 constexpr int picIdxLV_CrossMark16x16Green = 32;
-constexpr int picIdxLV_SwitchON32x16Cyan   = 33;
-constexpr int picIdxLV_SwitchOFF32x16Red   = 34;
+constexpr int picIdxLV_SwitchON32x16Red    = 33;
+constexpr int picIdxLV_SwitchOFF32x16Cyan  = 34;
 constexpr int picIdxLV_LogA20x20Cyan       = 35;
 constexpr int picIdxLV_LogB20x20Cyan       = 36;
 constexpr int picIdxLV_LogC20x20Cyan       = 37;
@@ -123,7 +123,28 @@ constexpr int picIdxCF_Edit20x20Cyan       = 38;
 constexpr int picIdxCF_Logic16x16Cyan      = 39;
 constexpr int picIdxCF_Device16x16Cyan     = 40;
 constexpr int picIdxCF_Serial16x16Cyan     = 41;
-constexpr int picIdxCF_Ethernet16x16Cyan   = 42; 
+constexpr int picIdxCF_Ethernet16x16Cyan   = 42;
+//===============================================================
+/*
+CSG atlas: picDLGAtlascsg
+   No. Image                     resolution     size  CRM       CRN  CAS          Size   ratio  
+ -----------------------------------------------------------------------------------------------
+   1.  DN_Datetime48x48Cyan.png     48x48       1814  RGB565     4  MiniLZ77       444   24.48%
+   2.  DN_IPAddress48x48Cyan.png    48x48       3102  RGB565     4  MiniLZ77       232    7.48%
+   3.  DN_Number48x48Cyan.png       48x48        674  RGB565     4  MiniLZ77       164   24.33%
+   4.  DN_Password48x48Cyan.png     48x48       1174  RGB565     4  RLE            328   27.94%
+ -----------------------------------------------------------------------------------------------
+   Total                                        6764                              1168   17.27%
+*/
+// CSG Atlas: DLGAtlas object
+extern const TGUIPicture picDLGAtlascsg;
+#define CSG_DLGATLAS   (&picDLGAtlascsg)
+
+// CSG Atlas: DLGAtlas picture index constants
+constexpr int picIdxDN_Datetime48x48Cyan  = 0;
+constexpr int picIdxDN_IPAddress48x48Cyan = 1;
+constexpr int picIdxDN_Number48x48Cyan    = 2;
+constexpr int picIdxDN_Password48x48Cyan  = 3;
 //===============================================================
 #ifdef __cplusplus
 }

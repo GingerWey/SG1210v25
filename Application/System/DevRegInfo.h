@@ -62,7 +62,7 @@ extern "C" {
 #define SIT_DIM_Min       (0x0E << 5)   // 分
 #define SIT_DIM_Sec       (0x0F << 5)   // 秒
 #define SIT_DIM_MSec      (0x10 << 5)   // 毫秒
-#define SIT_DIM_BPS       (0x11 << 5) // bit/s
+#define SIT_DIM_BPS       (0x11 << 5)   // bit/s
 #define SIT_DIM_PT100     (0x12 << 5)   //
 #define SIT_DIM_PT220     (0x13 << 5)   //
 #define SIT_DIM_PT380     (0x14 << 5)   //
@@ -132,7 +132,7 @@ extern "C" {
 #define SIT_VAT_MASK      (0x0F << SIT_VAT_SHIFT)
 #define SIT_VAT_INT       (0x00 << SIT_VAT_SHIFT)  // 整数
 #define SIT_VAT_HEX       (0x01 << SIT_VAT_SHIFT)  // 16进制
-#define SIT_VAT_REAL      (0x03 << SIT_VAT_SHIFT)  // 实数
+#define SIT_VAT_REAL      (0x02 << SIT_VAT_SHIFT)  // 实数 2026.7.21
 #define SIT_VAT_BIN       (0x03 << SIT_VAT_SHIFT)  // 二值状态
 #define SIT_VAT_ENUM      (0x04 << SIT_VAT_SHIFT)  // 枚举
 #define SIT_VAT_DATETIME  (0x05 << SIT_VAT_SHIFT)  // 日期时间
@@ -253,6 +253,12 @@ const char* RINF_GetDIMNameEx( const TDevRegInfoItem* pProp);
 // 输入：uRegNum = 寄存器地址
 // 返回：0 = 寄存器不存在或寄存器无量纲  != 指向名称字符串的指针
 const char* RINF_GetDIMName_With_AutoShift( uint32_t uRegNum, uint32_t uValue );
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Get enum option list for a given register
+// Returns: item count (0 if not found)
+// Output:  pList points to the string ID array
+int RINF_getRegEnumList(uint32_t uRegNum, const uint16_t*& pList);
 //-----------------------------------------------------------------------------
 #ifdef __cplusplus
 }

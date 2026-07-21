@@ -23,14 +23,14 @@
 //-----------------------------------------------------------------------------
 typedef struct tagMultiLangStrings
 {
-  uint32_t    Ident;
-  const char* Chs;
-  const char* Eng;
+  uint32_t        Ident;
+  const char*     Chs; 
+  const char*     Eng;
 } TMultiLangStrings;
 //=============================================================================
 // 本地数据
 //-----------------------------------------------------------------------------
-constexpr TMultiLangStrings listMultiStrings[] =
+static constexpr TMultiLangStrings listMultiStrings[] =
 {
    { idDevFuncUVTC,        "智能欠压脱扣控制装置",         "Undervoltage Tirp Controller"}
   ,{ idDevCopyright,       "Copyright(c) 2026 SilverGrid",  "Copyright(c) 2026 SilverGrid" }
@@ -50,18 +50,18 @@ constexpr TMultiLangStrings listMultiStrings[] =
 //  ,{ idStatusSpCharging,  "充电",                   "Chargeing"       }
 //  ,{ idStatusSpCharged,   "贮能",                   "Charged"         }
 // 界面语言                                                              
-  ,{ idLANG_CHS,          "简体中文/CHS",           "简体中文/CHS"       }
-  ,{ idLANG_ENG,          "英文/English",           "英语/English"       }
+  ,{ idLANG_CHS,          "简体中文/CHS",           "简体中文/CHS"      }
+  ,{ idLANG_ENG,          "英文/English",           "英语/English"      }
 // 经销商列表
   ,{ idVedor01,            "银网科技",              "SilverGrid"        }
   ,{ idCulture01,          "动力无限",              "Dynamic infinite"  }
 // 常用按键
-  ,{ idBtnCapOk,          "确定",                   "Ok"                 }
-  ,{ idBtnCapCancel,      "放弃",                   "Cancel"             }
-  ,{ idBtnCapClose,       "关闭",                   "Close"              }
-//  ,{ idBtnCapYes,         "是",                    "Yes"              }
-//  ,{ idBtnCapNo,          "否",                    "No"               }
-//  ,{ idBtnCapBegin,       "开始",                  "Start"            }
+  ,{ idBtnCapOk,          "确定",                   "Ok"                }
+  ,{ idBtnCapCancel,      "放弃",                   "Cancel"            }
+  ,{ idBtnCapClose,       "关闭",                   "Close"             }
+  ,{ idBtnCapYes,         "是",                    "Yes"              }
+  ,{ idBtnCapNo,          "否",                    "No"               }
+  ,{ idBtnCapBegin,       "开始",                  "Start"            }
   ,{ idEnableYes,          "允许",                  "Enable"            }
   ,{ idEnableNo,           "禁止",                  "Disable"           }
 
@@ -69,10 +69,10 @@ constexpr TMultiLangStrings listMultiStrings[] =
   ,{ idSysMode1,           "正在起动",              "Starting"          }
   ,{ idSysMode2,           "正在校准",              "Calibrating"       }
   ,{ idSysMode3,           "传动试验",              "Testing"           }
-  ,{ idSysMode4,           "正在维护参数",          "Configuring"      }
+  ,{ idSysMode4,           "正在维护参数",          "Configuring"       }
   ,{ idSysMode5,           "软件故障",              "FW Fatal"          }
   ,{ idSysMode6,           "硬件故障",              "HW Fatal"          }
-  ,{ idSysMode7,           "功能类型错误",          "Unknown FunType"  }
+  ,{ idSysMode7,           "功能类型错误",          "Unknown FunType"   }
   ,{ idSysMode8,           "定值错误",              "Setting Fatal"     }
   ,{ idSysModeX,           "未知状态",              "Unknown Mode"      }
 
@@ -197,9 +197,9 @@ constexpr TMultiLangStrings listMultiStrings[] =
 // 确认装置重启
   ,{ idDeviceResetCfm,    szDeviceResetCfm,              szEngDeviceResetCfm  }
 // 用户登录窗体
-  ,{ idLoginCap1,         szLoginCap1,                   szEngLoginCap1       }
-  ,{ idLoginCap2,         szLoginCap2,                   szEngLoginCap2       }
-  ,{ idLoginCap3,         szLoginCap3,                   szEngLoginCap3       }
+  ,{ idLoginCap1,         "操作口令:",                   szEngLoginCap1       }
+  ,{ idLoginCap2,         "管理口令:",                   szEngLoginCap2       }
+  ,{ idLoginCap3,         "超级口令:",                   szEngLoginCap3       }
   ,{ idLoginApply,        "申请码：",                    "Apply code:"        }
   ,{ idLoginChkErrCap,    szLoginChkErrCap,              szEngLoginChkErrCap  }
   ,{ idLoginChkErrTxt,    szLoginChkErrTxt,              szEngLoginChkErrTxt  }
@@ -338,11 +338,11 @@ constexpr TMultiLangStrings listMultiStrings[] =
   ,{ idUartParity1,       "偶校验",                    "Even"                }
   ,{ idUartParity2,       "奇校验",                    "Odd"                 }
 
-  ,{ idUartBaud01,        "4800",                      "4800"               }
-  ,{ idUartBaud02,        "9600",                      "9600"               }
-  ,{ idUartBaud03,        "14400",                     "14400"              }
-  ,{ idUartBaud04,        "19200",                     "19200"              }
-  ,{ idUartBaud05,        "115200",                    "115200"             }
+  ,{ idUartBaud1200,      "4800",                      "4800"               }
+  ,{ idUartBaud2400,      "9600",                      "9600"               }
+  ,{ idUartBaud4800,      "14400",                     "14400"              }
+  ,{ idUartBaud9600,      "19200",                     "19200"              }
+  ,{ idUartBaud19200,     "115200",                    "115200"             }
 
   ,{ idUartUnit01,        "bps",                       "bps"                }
   ,{ idUartUnit02,        "位",                        "bits"               }

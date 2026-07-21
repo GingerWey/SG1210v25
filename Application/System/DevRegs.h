@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 /*
  File        : DevRegs.h
  Version     : V1.10
@@ -12,8 +12,10 @@
 #ifndef DEV_REGISTER_H
 #define DEV_REGISTER_H
 
-#include "DevFixed.h"
 #include "DevBuffer.h"
+#include "DevFixed.h"
+#include "Dev_Cfg.h"
+#include "DevTypes.h"
 
 #include <stdint.h>
 //-----------------------------------------------------------------------------

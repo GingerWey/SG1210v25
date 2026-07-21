@@ -59,7 +59,7 @@ extern "C" {
   // 报告出错信息，并锁死装置
   int _Error_Handler(uint32_t uErrType, const char* pFileName, uint32_t uLineNo);
 #else
-  #define _Error_Handler( e, l )    (0)
+  #define DEV_FAULT(t)
 #endif
 //=============================================================================
 #ifdef __cplusplus
