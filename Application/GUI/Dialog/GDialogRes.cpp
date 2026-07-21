@@ -24,6 +24,7 @@
 #include "GLabel.h"
 #include "GEditorPanel.h"
 #include "GListbox.h"
+#include "DevTypes.h"
 
 #include "DevIntf.h"
 #include "DevRegs.h"
@@ -31,6 +32,7 @@
 
 #include <GUI.h>
 #include "FontSGRes.h"
+#include "Graphics/ImageRes.h"  // Dialog icons from DLGAtlas
 
 //=============================================================================
 // DigitalKeyboard Key Grid (§4.1.2)
@@ -121,7 +123,7 @@ static const GLabel::GConfig s_numRegIconLabel = {
   0x031635,  // crBackground
   0xC0C0C0,  // crText
   nullptr,   // ftText
-  {nullptr, 0},  // image - TODO: set icon
+  {CSG_DLGATLAS, picIdxDN_Number48x48Cyan},  // Number icon from DLGAtlas
   0, nullptr
 };
 
@@ -211,7 +213,7 @@ static const GLabel::GConfig s_loginIconLabel = {
   0x031635,
   0xC0C0C0,
   nullptr,
-  {nullptr, 0},  // TODO: password icon
+  {CSG_DLGATLAS, picIdxDN_Password48x48Cyan},  // Password icon from DLGAtlas
   0, nullptr
 };
 
@@ -239,7 +241,7 @@ static const GLabel::GConfig s_loginHintLabel = {
   GUI_FONT_16_ASCII,
   {nullptr, 0},
   0,  // TODO: idPasswordHint - "Please input 4-digit password"
-  nullptr
+  "Please input 4-digit password"
 };
 
 // GLoginDialog label array
@@ -282,7 +284,7 @@ const GDialog::GDialogConfig g_loginDialogConfig = {
 static const GLabel::GConfig s_ipIconLabel = {
   17, 17, 48, 48, GLabel::drNone, GUI_DRAWMODE_TRANS,
   (GUI_TA_RIGHT | GUI_TA_VCENTER), 0x031635, 0xC0C0C0,
-  nullptr, {nullptr, 0}, 0, nullptr
+  nullptr, {CSG_DLGATLAS, picIdxDN_IPAddress48x48Cyan}, 0, nullptr
 };
 
 static const GLabel::GConfig s_ipTitleLabel = {
@@ -324,7 +326,7 @@ const GDialog::GDialogConfig g_ipDialogConfig = {
 static const GLabel::GConfig s_datetimeIconLabel = {
   17, 17, 48, 48, GLabel::drNone, GUI_DRAWMODE_TRANS,
   (GUI_TA_RIGHT | GUI_TA_VCENTER), 0x031635, 0xC0C0C0,
-  nullptr, {nullptr, 0}, 0, nullptr
+  nullptr, {CSG_DLGATLAS, picIdxDN_Datetime48x48Cyan}, 0, nullptr
 };
 
 static const GLabel::GConfig s_datetimeTitleLabel = {
